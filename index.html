@@ -1,0 +1,3063 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perpustakaan Digital</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js for Dashboard Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- html2canvas for Member Card Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- PERBAIKAN: Mengganti JsBarcode dengan Qrious (QR Code) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    
+    <style>
+        /* Menggunakan font Inter yang mirip dengan Notus */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* bg-gray-50 */
+        }
+        
+        /* Sidebar scrollbar styling */
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* bg-slate-300 */
+            border-radius: 3px;
+        }
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* bg-slate-400 */
+        }
+
+        /* Sembunyikan elemen saat loading */
+        [v-cloak] {
+            display: none;
+        }
+
+        /* Print styles for Reports (INI SUDAH OPTIMAL) */
+        @media print {
+            /* PERBAIKAN: Menambahkan margin 1.5cm untuk laporan */
+            @page {
+                size: portrait;
+                margin: 1.5cm;
+            }
+        
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            #print-header {
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+
+            /* FIX: Menambahkan border untuk tabel laporan saat cetak */
+            #laporan-table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+            #laporan-table th,
+            #laporan-table td {
+                border: 1px solid #000 !important;
+                padding: 8px !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            #laporan-table thead {
+                background-color: #f3f4f6 !important; /* bg-gray-100 */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* --- Akhir Fix Laporan --- */
+        }
+        
+        /* Kustomisasi gaya cetak untuk kartu (diterapkan di pop-up) */
+        /* PERBAIKAN: Menghapus aturan @page global yang bentrok dengan laporan */
+        
+    </style>
+</head>
+<body class="antialiased" v-cloak>
+
+    <!-- ===== LOGIN PAGE ===== -->
+    <div id="login-page" class="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-2xl"> <!-- Padding disesuaikan -->
+                
+                <!-- Logo and Title -->
+                <div class="flex flex-col items-center mb-6">
+                    <img src="https://placehold.co/100x100/38bdf8/ffffff?text=LOGO" alt="Logo Perpustakaan" class="h-20 w-20 mb-4 rounded-full" id="login-logo-placeholder">
+                    <img id="login-logo" alt="Logo Perpustakaan" class="h-20 w-20 mb-4 rounded-full hidden">
+                    
+                    <h1 class="text-2xl font-bold text-gray-800 text-center">PERPUSTAKAAN<br>DIGITAL</h1>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="login-error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 hidden" role="alert">
+                    <span class="block sm:inline" id="login-error-message"></span>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <!-- Wrapper icon dihapus -->
+                        <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="email@anda.com">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <div class="relative">
+                            <!-- Wrapper icon gembok dihapus -->
+                            <input type="password" id="password" name="password" required class="w-full px-4 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="••••••••">
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-sky-600">
+                                <i data-lucide="eye" id="icon-eye" class="h-5 w-5"></i>
+                                <i data-lucide="eye-off" id="icon-eye-off" class="h-5 w-5 hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <a href="#" id="toggle-to-register" class="text-sm text-sky-600 hover:underline">Belum punya akun? Daftar</a>
+                        <a href="#" id="toggle-to-login" class="text-sm text-sky-600 hover:underline hidden">Sudah punya akun? Login</a>
+                    </div>
+                    
+                    <button type="submit" id="login-button" class="w-full bg-sky-500 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-50 transition duration-200">
+                        Login
+                    </button>
+                    <button type="submit" id="register-button" class="w-full bg-emerald-500 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 transition duration-200 hidden">
+                        Daftar
+                    </button>
+                </form>
+                
+                <!-- Divider -->
+                <div class="my-6 flex items-center justify-center">
+                    <span class="border-t border-gray-300 flex-grow"></span>
+                    <span class="mx-4 text-sm font-medium text-gray-500">ATAU</span>
+                    <span class="border-t border-gray-300 flex-grow"></span>
+                </div>
+                
+                <!-- Google Login -->
+                <button id="google-login-button" class="w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-semibold shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-opacity-50 transition duration-200 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,36.591,44,30.884,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                    Login dengan Google
+                </button>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="text-center mt-6 text-sm text-gray-600">
+                ©2025 Admin Candra. All right reserved.
+            </footer>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APPLICATION ===== -->
+    <div id="main-app" class="flex h-screen bg-gray-100 hidden">
+        
+        <!-- ===== Sidebar ===== -->
+        <!-- Kelas diubah untuk responsive: fixed, z-40, -translate-x-full, md:static, md:translate-x-0 -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg flex flex-col transition-all duration-300 overflow-y-auto -translate-x-full md:static md:translate-x-0">
+            <!-- Sidebar Header -->
+            <div class="h-16 md:h-20 flex items-center justify-center p-4 border-b"> <!-- Tinggi disesuaikan -->
+                <img id="sidebar-logo" src="https://placehold.co/50x50/38bdf8/ffffff?text=LOGO" alt="Logo Sekolah" class="h-12 w-12 rounded-full mr-3">
+                <div class="text-left">
+                    <h2 id="sidebar-school-name" class="text-sm font-bold text-gray-800">Nama Sekolah</h2>
+                    <p id="sidebar-school-address" class="text-xs text-gray-600">Alamat Sekolah</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="flex-1 px-4 py-4 space-y-2">
+                <a href="#" data-page="dashboard" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group active-nav">
+                    <i data-lucide="layout-dashboard" class="mr-3 h-5 w-5"></i>
+                    Dashboard
+                </a>
+                <a href="#" data-page="kelas" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="school-2" class="mr-3 h-5 w-5"></i>
+                    Kelas
+                </a>
+                <a href="#" data-page="buku" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="book-open" class="mr-3 h-5 w-5"></i>
+                    Data Buku
+                </a>
+                <a href="#" data-page="anggota" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="users" class="mr-3 h-5 w-5"></i>
+                    Data Anggota
+                </a>
+                <!-- Transaksi Dropdown -->
+                <div>
+                    <button id="transaksi-toggle" class="nav-link w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                        <span class="flex items-center">
+                            <i data-lucide="arrow-right-left" class="mr-3 h-5 w-5"></i>
+                            Transaksi
+                        </span>
+                        <i data-lucide="chevron-down" id="transaksi-chevron" class="h-5 w-5 transition-transform"></i>
+                    </button>
+                    <div id="transaksi-submenu" class="ml-8 space-y-2 py-2 hidden">
+                        <a href="#" data-page="peminjaman" class="nav-link flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-sky-50 hover:text-sky-700">
+                            Peminjaman Buku
+                        </a>
+                        <a href="#" data-page="pengembalian" class="nav-link flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-sky-50 hover:text-sky-700">
+                            Pengembalian Buku
+                        </a>
+                    </div>
+                </div>
+                <a href="#" data-page="kartu" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="contact-2" class="mr-3 h-5 w-5"></i>
+                    Kartu Anggota
+                </a>
+                <a href="#" data-page="riwayat" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="history" class="mr-3 h-5 w-5"></i>
+                    Riwayat Peminjaman
+                </a>
+                <a href="#" data-page="laporan" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="file-text" class="mr-3 h-5 w-5"></i>
+                    Laporan
+                </a>
+                <a href="#" data-page="pengaturan" class="nav-link flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 hover:bg-sky-100 hover:text-sky-700 group">
+                    <i data-lucide="settings" class="mr-3 h-5 w-5"></i>
+                    Pengaturan
+                </a>
+            </nav>
+            
+            <!-- Sidebar Footer (Logout) -->
+            <div class="p-4 border-t">
+                <button id="logout-button" class="w-full flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 group">
+                    <i data-lucide="log-out" class="mr-3 h-5 w-5"></i>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sidebar Overlay (untuk mobile) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+        <!-- ===== Main Content ===== -->
+        <!-- PERBAIKAN: Menambahkan min-w-0 untuk mencegah sidebar mengkerut saat tabel overflow -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Top Header -->
+            <header class="h-16 md:h-20 bg-white shadow-sm flex items-center justify-between px-6 no-print"> <!-- Tinggi dan justify disesuaikan -->
+                
+                <!-- Hamburger Menu Button (Mobile) -->
+                <button id="sidebar-toggle-button" class="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                    <i data-lucide="menu" class="h-6 w-6"></i>
+                </button>
+                
+                <!-- Spacer (invisible on mobile, so date/time shifts right) -->
+                <div class="hidden md:block"></div> 
+
+                <div class="text-right">
+                    <div id="current-date" class="text-sm font-semibold text-gray-800"></div>
+                    <div id="current-time" class="text-xs text-gray-600"></div>
+                </div>
+            </header>
+            
+            <!-- Page Content Wrapper -->
+            <!-- PERBAIKAN: flex-1 dan overflow-y-auto sudah benar di sini -->
+            <main id="page-content" class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
+                
+                <!-- ===== Dashboard Page ===== -->
+                <div id="page-dashboard" class="page-container">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-sky-100 text-sky-600 mr-4">
+                                <i data-lucide="book" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Buku</p>
+                                <p id="stat-total-buku" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
+                                <i data-lucide="users" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Anggota</p>
+                                <p id="stat-total-anggota" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
+                                <i data-lucide="school" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Kelas</p>
+                                <p id="stat-total-kelas" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
+                                <i data-lucide="book-copy" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Buku Dipinjam</p>
+                                <p id="stat-buku-dipinjam" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart and Notices -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                        <!-- Activity Chart -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Grafik Aktifitas Minggu Ini</h3>
+                            <div class="relative h-96"> <!-- Wrapper with fixed height -->
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Notices -->
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i data-lucide="bell" class="h-5 w-5 text-red-500 mr-2"></i>
+                                    Buku Terlambat
+                                </h3>
+                                <ul id="notice-terlambat" class="space-y-2 text-sm text-gray-700 max-h-40 overflow-y-auto">
+                                    <!-- Diisi oleh JS -->
+                                    <li class="text-gray-500">Tidak ada buku terlambat.</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i data-lucide="activity" class="h-5 w-5 text-blue-500 mr-2"></i>
+                                    Aktifitas Hari Ini
+                                </h3>
+                                <ul id="notice-hari-ini" class="space-y-2 text-sm text-gray-700 max-h-40 overflow-y-auto">
+                                    <!-- Diisi oleh JS -->
+                                    <li class="text-gray-500">Tidak ada aktifitas.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity Table -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Daftar Aktifitas Terbaru</h3>
+                        <!-- Table controls -->
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center space-x-2">
+                                <label for="table-rows-dashboard" class="text-sm text-gray-600">Tampil:</label>
+                                <select id="table-rows-dashboard" class="pagination-rows-select rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option>10</option>
+                                    <option>20</option>
+                                    <option>40</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3">Anggota</th>
+                                        <th scope="col" class="px-6 py-3">Buku</th>
+                                        <th scope="col" class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body-dashboard" class="bg-white divide-y">
+                                    <!-- Diisi oleh JS -->
+                                    <tr><td colspan="4" class="px-6 py-4 text-center">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="pagination-dashboard" class="flex justify-between items-center pt-4">
+                            <!-- Diisi oleh JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Kelas Page ===== -->
+                <div id="page-kelas" class="page-container hidden">
+                    <!-- Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
+                                <i data-lucide="school" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Kelas</p>
+                                <p id="stat-total-kelas-page" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                            <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
+                                <i data-lucide="users" class="h-6 w-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Siswa</p>
+                                <p id="stat-total-siswa-page" class="text-2xl font-bold text-gray-800">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Table Card -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Data Kelas</h3>
+                            <button id="add-kelas-button" class="btn-primary flex items-center bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium">
+                                <i data-lucide="plus" class="h-4 w-4 mr-1"></i>
+                                Tambah Kelas
+                            </button>
+                        </div>
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Nama Kelas</th>
+                                        <th scope="col" class="px-6 py-3">Wali Kelas</th>
+                                        <th scope="col" class="px-6 py-3">Jumlah Siswa</th>
+                                        <th scope="col" class="px-6 py-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body-kelas" class="bg-white divide-y">
+                                    <!-- Diisi oleh JS -->
+                                    <tr><td colspan="4" class="px-6 py-4 text-center">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Data Buku Page ===== -->
+                <div id="page-buku" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Data Buku</h3>
+                            <button id="add-buku-button" class="btn-primary flex items-center bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium">
+                                <i data-lucide="plus" class="h-4 w-4 mr-1"></i>
+                                Tambah Buku
+                            </button>
+                        </div>
+                        <!-- Table controls -->
+                        <!-- flex-col sm:flex-row sudah ada -->
+                        <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-4">
+                            <div class="flex items-center space-x-2">
+                                <label for="table-rows-buku" class="text-sm text-gray-600">Tampil:</label>
+                                <select id="table-rows-buku" class="pagination-rows-select rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option>10</option>
+                                    <option>20</option>
+                                    <option>40</option>
+                                    <option>60</option>
+                                    <option>80</option>
+                                    <option>100</option>
+                                </select>
+                            </div>
+                            <input type="text" id="search-buku" class="pagination-search-input rounded-md border-gray-300 shadow-sm text-sm w-full sm:w-auto" placeholder="Cari buku...">
+                        </div>
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Judul Buku</th>
+                                        <th scope="col" class="px-6 py-3">Pengarang</th>
+                                        <th scope="col" class_disabled="px-6 py-3">Penerbit</th>
+                                        <th scope="col" class="px-6 py-3">Tahun</th>
+                                        <th scope="col" class="px-6 py-3">Jumlah</th>
+                                        <th scope="col" class="px-6 py-3">Kode</th>
+                                        <th scope="col" class="px-6 py-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body-buku" class="bg-white divide-y">
+                                    <!-- Diisi oleh JS -->
+                                    <tr><td colspan="7" class="px-6 py-4 text-center">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="pagination-buku" class="flex justify-between items-center pt-4">
+                            <!-- Diisi oleh JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Data Anggota Page ===== -->
+                <div id="page-anggota" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Data Anggota</h3>
+                            <button id="add-anggota-button" class="btn-primary flex items-center bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium">
+                                <i data-lucide="plus" class="h-4 w-4 mr-1"></i>
+                                Tambah Anggota
+                            </button>
+                        </div>
+                        <!-- Table controls -->
+                        <!-- flex-col sm:flex-row sudah ada -->
+                        <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-4">
+                            <div class="flex items-center space-x-2">
+                                <label for="table-rows-anggota" class="text-sm text-gray-600">Tampil:</label>
+                                <select id="table-rows-anggota" class="pagination-rows-select rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option>10</option>
+                                    <option>20</option>
+                                    <option>40</option>
+                                    <option>60</option>
+                                    <option>80</option>
+                                    <option>100</option>
+                                </select>
+                            </div>
+                             <input type="text" id="search-anggota" class="pagination-search-input rounded-md border-gray-300 shadow-sm text-sm w-full sm:w-auto" placeholder="Cari anggota...">
+                        </div>
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">NISN</th>
+                                        <th scope="col" class="px-6 py-3">Nama Lengkap</th>
+                                        <th scope="col" class="px-6 py-3">Kelas</th>
+                                        <th scope="col" class="px-6 py-3">No. Telepon (Ortu)</th>
+                                        <th scope="col" class="px-6 py-3">Alamat</th>
+                                        <th scope="col" class="px-6 py-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body-anggota" class="bg-white divide-y">
+                                    <!-- Diisi oleh JS -->
+                                    <tr><td colspan="6" class="px-6 py-4 text-center">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="pagination-anggota" class="flex justify-between items-center pt-4">
+                            <!-- Diisi oleh JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Peminjaman Page ===== -->
+                <div id="page-peminjaman" class="page-container hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Form Peminjaman -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Form Peminjaman Buku</h3>
+                            <form id="form-peminjaman" class="space-y-4">
+                                <div>
+                                    <label for="pinjam-kode" class="block text-sm font-medium text-gray-700">Kode Peminjaman</label>
+                                    <input type="text" id="pinjam-kode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Otomatis (Contoh: PJM-12345)">
+                                </div>
+                                <div>
+                                    <label for="pinjam-anggota" class="block text-sm font-medium text-gray-700">Nama Anggota</label>
+                                    <select id="pinjam-anggota" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                        <option value="">Pilih Anggota</option>
+                                        <!-- Diisi oleh JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="pinjam-buku" class="block text-sm font-medium text-gray-700">Buku</label>
+                                    <select id="pinjam-buku" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                        <option value="">Pilih Buku</option>
+                                        <!-- Diisi oleh JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="pinjam-tgl-pinjam" class="block text-sm font-medium text-gray-700">Tanggal Pinjam</label>
+                                    <input type="date" id="pinjam-tgl-pinjam" readonly class="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100">
+                                </div>
+                                <div>
+                                    <label for="pinjam-tgl-kembali" class="block text-sm font-medium text-gray-700">Tanggal Pengembalian (Estimasi)</label>
+                                    <input type="date" id="pinjam-tgl-kembali" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                </div>
+                                <button type="submit" class="w-full bg-sky-500 text-white py-2 px-4 rounded-lg shadow hover:bg-sky-600 font-medium">
+                                    Simpan Peminjaman
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Daftar Buku Dipinjam -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Daftar Buku Sedang Dipinjam</h3>
+                            <div class="overflow-y-auto max-h-[450px]">
+                                <table class="w-full text-sm text-left text-gray-500">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-3">Anggota</th>
+                                            <th scope="col" class="px-4 py-3">Buku</th>
+                                            <th scope="col" class="px-4 py-3">Tgl Kembali</th>
+                                            <th scope="col" class="px-4 py-3">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-body-dipinjam" class="bg-white divide-y">
+                                        <!-- Diisi oleh JS -->
+                                        <tr><td colspan="4" class="px-4 py-4 text-center">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Pengembalian Page ===== -->
+                <div id="page-pengembalian" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Form Pengembalian Buku</h3>
+                        <form id="form-pengembalian" class="space-y-4 max-w-lg mx-auto">
+                            <div>
+                                <label for="kembali-transaksi" class="block text-sm font-medium text-gray-700">Pilih Transaksi (Anggota - Buku)</label>
+                                <select id="kembali-transaksi" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="">Pilih transaksi yang akan dikembalikan</option>
+                                    <!-- Diisi oleh JS -->
+                                </select>
+                            </div>
+                            <div class="p-4 border rounded-md bg-gray-50 space-y-2 hidden" id="kembali-detail">
+                                <p class="text-sm"><strong>Anggota:</strong> <span id="kembali-detail-anggota"></span></p>
+                                <p class="text-sm"><strong>Buku:</strong> <span id="kembali-detail-buku"></span></p>
+                                <p class="text-sm"><strong>Tgl Pinjam:</strong> <span id="kembali-detail-tgl-pinjam"></span></p>
+                                <p class="text-sm"><strong>Estimasi Kembali:</strong> <span id="kembali-detail-tgl-kembali"></span></p>
+                            </div>
+                            <div>
+                                <label for="kembali-tgl-real" class="block text-sm font-medium text-gray-700">Tanggal Real Pengembalian</label>
+                                <input type="date" id="kembali-tgl-real" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-500 text-white py-2 px-4 rounded-lg shadow hover:bg-emerald-600 font-medium">
+                                Simpan Pengembalian
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- ===== Kartu Anggota Page ===== -->
+                <div id="page-kartu" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Cetak Kartu Anggota</h3>
+                        
+                        <!-- Controls -->
+                        <div class="flex flex-wrap gap-4 items-center mb-6 no-print">
+                            <div class="flex-1 min-w-[200px]">
+                                <label for="kartu-pilih-anggota" class="block text-sm font-medium text-gray-700">Pilih Anggota</label>
+                                <select id="kartu-pilih-anggota" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="">Pilih Anggota</option>
+                                    <!-- Diisi oleh JS -->
+                                </select>
+                            </div>
+                            <button id="kartu-print-button" class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 text-sm font-medium">
+                                <i data-lucide="printer" class="h-4 w-4 mr-1"></i>
+                                Cetak
+                            </button>
+                            <button id="kartu-download-button" class="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 text-sm font-medium">
+                                <i data-lucide="download" class="h-4 w-4 mr-1"></i>
+                                Download JPG
+                            </button>
+                        </div>
+
+                        <!-- Card Preview Area -->
+                        <div id="kartu-anggota-print-area" class="flex justify-center items-center bg-gray-100 p-6 rounded-lg">
+                            
+                            <!-- ===== PERBAIKAN: DESAIN ULANG KARTU ANGGOTA ===== -->
+                            <div id="kartu-anggota-preview" class="bg-white rounded-xl shadow-lg w-full max-w-[540px] aspect-[85.6/53.98] flex flex-col overflow-hidden relative">
+                                
+                                <!-- PERBAIKAN: Ornamen Keren Berwarna -->
+                                <div class="absolute inset-0 w-full h-full z-0" 
+                                     style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z' fill='%2390cdf4' fill-opacity='0.6' fill-rule='evenodd'/%3E%3C/svg%3E&quot;); background-size: 25px 25px;">
+                                </div>
+                                
+                                <!-- Header (z-10) -->
+                                <div class="relative z-10 flex items-center justify-between bg-sky-50/70 backdrop-blur-sm p-4">
+                                    <div class="flex items-center">
+                                        <img id="kartu-logo" src="https://placehold.co/50x50/38bdf8/ffffff?text=LOGO" alt="Logo" class="h-12 w-12 rounded-full mr-3">
+                                        <div>
+                                            <p class="text-xs font-bold uppercase text-sky-700">PERPUSTAKAAN</p>
+                                            <p id="kartu-nama-sekolah" class="text-sm font-semibold text-gray-800">Nama Sekolah</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-bold text-sky-600 leading-tight">DIGITAL</p>
+                                        <p class="text-xs text-gray-500">Kartu Anggota</p>
+                                    </div>
+                                </div>
+                            
+                                <!-- Card Body (z-10) -->
+                                <div class="relative z-10 flex-1 flex gap-3 p-3 items-center">
+                                    <!-- Col 1: Foto -->
+                                    <div class="w-1/4 flex-shrink-0 flex flex-col items-center">
+                                        <!-- Foto Placeholder -->
+                                        <div class="w-24 h-32 bg-gray-200 rounded-md flex items-center justify-center">
+                                            <i data-lucide="image" class="h-10 w-10 text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                    <!-- Col 2: Info -->
+                                    <div class="flex-1 space-y-2">
+                                        <div>
+                                            <p class="text-xs uppercase text-gray-500">Nama Lengkap</p>
+                                            <p id="kartu-nama" class="text-lg font-semibold text-gray-800">-</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs uppercase text-gray-500">NISN</p>
+                                            <p id="kartu-nisn" class="text-base font-medium text-gray-700">-</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs uppercase text-gray-500">Kelas</p>
+                                            <p id="kartu-kelas" class="text-base font-medium text-gray-700">-</p>
+                                        </div>
+                                    </div>
+                                    <!-- Col 3: Barcode -->
+                                    <div class="w-1/3 flex flex-col items-center justify-center text-center px-2">
+                                        <!-- PERBAIKAN: Teks diubah -->
+                                        <p class="text-xs text-gray-500 mb-1">QR Code</p>
+                                        <!-- PERBAIKAN: Diganti dari <svg> ke <canvas> untuk QrCode -->
+                                        <canvas id="kartu-qr-canvas" class="w-20 h-20 hidden"></canvas>
+                                    </div>
+                                </div>
+
+                                <!-- Footer / Alamat (z-10) -->
+                                <div class="relative z-10 bg-gray-50/70 backdrop-blur-sm p-2 text-center">
+                                    <p id="kartu-alamat-sekolah" class="text-xs text-gray-600 italic">Alamat Sekolah</p>
+                                </div>
+                            </div>
+                            <!-- ===== AKHIR DESAIN ULANG KARTU ===== -->
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Riwayat Peminjaman Page ===== -->
+                <div id="page-riwayat" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Peminjaman</h3>
+                        
+                        <!-- Filter Anggota -->
+                        <div class="mb-4 max-w-md">
+                            <label for="riwayat-pilih-anggota" class="block text-sm font-medium text-gray-700">Filter per Anggota</label>
+                            <select id="riwayat-pilih-anggota" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="semua">Tampilkan Semua Anggota</option>
+                                <!-- Diisi oleh JS -->
+                            </select>
+                        </div>
+                        
+                        <!-- Table controls -->
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center space-x-2">
+                                <label for="table-rows-riwayat" class="text-sm text-gray-600">Tampil:</label>
+                                <select id="table-rows-riwayat" class="pagination-rows-select rounded-md border-gray-300 shadow-sm text-sm">
+                                    <option>10</option>
+                                    <option>20</option>
+                                    <option>40</option>
+                                    <option>60</option>
+                                    <option>80</option>
+                                    <option>100</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Anggota</th>
+                                        <th scope="col" class="px-6 py-3">Buku</th>
+                                        <th scope="col" class="px-6 py-3">Tgl Pinjam</th>
+                                        <th scope="col" class="px-6 py-3">Tgl Kembali</th>
+                                        <th scope="col" class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body-riwayat" class="bg-white divide-y">
+                                    <!-- Diisi oleh JS -->
+                                    <tr><td colspan="5" class="px-6 py-4 text-center">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination -->
+                        <div id="pagination-riwayat" class="flex justify-between items-center pt-4">
+                            <!-- Diisi oleh JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Laporan Page ===== -->
+                <div id="page-laporan" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <!-- Controls -->
+                        <div class="no-print">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Laporan Peminjaman</h3>
+                            <!-- flex-col sm:flex-row sudah ada -->
+                            <div class="flex flex-col sm:flex-row sm:flex-wrap gap-4 items-stretch sm:items-end mb-6">
+                                <div class="w-full sm:w-auto">
+                                    <label for="laporan-tgl-mulai" class="block text-sm font-medium text-gray-700">Dari Tanggal</label>
+                                    <input type="date" id="laporan-tgl-mulai" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                </div>
+                                <div class="w-full sm:w-auto">
+                                    <label for="laporan-tgl-akhir" class="block text-sm font-medium text-gray-700">Sampai Tanggal</label>
+                                    <input type="date" id="laporan-tgl-akhir" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                </div>
+                                <!-- Tombol-tombol -->
+                                <div class="flex gap-2 flex-wrap"> <!-- Tombol akan wrap sendiri -->
+                                    <button id="laporan-filter-button" class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 text-sm font-medium">
+                                        <i data-lucide="filter" class="h-4 w-4 mr-1"></i>
+                                        Filter
+                                    </button>
+                                    <button id="laporan-reset-button" class="flex items-center bg-gray-500 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-600 text-sm font-medium">
+                                        <i data-lucide="rotate-ccw" class="h-4 w-4 mr-1"></i>
+                                        Reset
+                                    </button>
+                                </div>
+                                <!-- Tombol Cetak dipisah agar bisa ke kanan di desktop -->
+                                <button id="laporan-print-button" class="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 text-sm font-medium sm:ml-auto">
+                                    <i data-lucide="printer" class="h-4 w-4 mr-1"></i>
+                                    Cetak Laporan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Print Area -->
+                        <div id="print-area">
+                            <!-- Print Header (Kop Surat) -->
+                            <div id="print-header" class="hidden border-b-2 border-black pb-2 mb-4">
+                                <div class="flex items-center">
+                                    <img id="laporan-logo" src="https://placehold.co/80x80/38bdf8/ffffff?text=LOGO" alt="Logo" class="h-20 w-20 mr-4">
+                                    <div class="text-center flex-1">
+                                        <!-- PERBAIKAN: Ukuran font diubah ke 13pt dan class text-xl dihapus -->
+                                        <h3 id="laporan-instansi-1" class="font-bold uppercase" style="font-size: 13pt;">Nama Instansi Baris 1</h3>
+                                        <h3 id="laporan-instansi-2" class="font-bold uppercase" style="font-size: 13pt;">Nama Instansi Baris 2</h3>
+                                        <h4 id="laporan-nama-sekolah" class="text-lg font-semibold">Nama Sekolah</h4>
+                                        <p id="laporan-alamat-sekolah" class="text-sm italic">Alamat Sekolah</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4 class="text-lg font-semibold text-center my-4">Laporan Peminjaman Buku</h4>
+                            <p class="text-center text-sm mb-4">Periode: <span id="laporan-periode">Semua data</span></p>
+
+                            <!-- Table -->
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-500" id="laporan-table">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">No</th>
+                                            <th scope="col" class="px-6 py-3">Nama Anggota</th>
+                                            <th scope="col" class="px-6 py-3">Kode Peminjaman</th>
+                                            <th scope="col" class="px-6 py-3">Buku</th>
+                                            <th scope="col" class="px-6 py-3">Tgl Pinjam</th>
+                                            <th scope="col" class="px-6 py-3">Tgl Kembali</th>
+                                            <th scope="col" class="px-6 py-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-body-laporan" class="bg-white divide-y">
+                                        <!-- Diisi oleh JS -->
+                                        <tr><td colspan="7" class="px-6 py-4 text-center">Tidak ada data untuk ditampilkan.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ===== Pengaturan Page ===== -->
+                <div id="page-pengaturan" class="page-container hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Pengaturan Institusi</h3>
+                        <form id="form-pengaturan" class="space-y-4">
+                            <!-- Logo Upload -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Logo</label>
+                                <div class="mt-1 flex items-center space-x-4">
+                                    <img id="pengaturan-logo-preview" src="https://placehold.co/100x100/38bdf8/ffffff?text=LOGO" class="h-24 w-24 rounded-full bg-gray-100 object-cover">
+                                    <input type="file" id="pengaturan-logo-upload" accept="image/*" class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+                                </div>
+                                <input type="hidden" id="pengaturan-logo-base64">
+                            </div>
+                            
+                            <div>
+                                <label for="pengaturan-instansi-1" class="block text-sm font-medium text-gray-700">Nama Instansi (Baris 1)</label>
+                                <input type="text" id="pengaturan-instansi-1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            
+                            <div>
+                                <label for="pengaturan-instansi-2" class="block text-sm font-medium text-gray-700">Nama Instansi (Baris 2)</label>
+                                <input type="text" id="pengaturan-instansi-2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+
+                            <div>
+                                <label for="pengaturan-nama-sekolah" class="block text-sm font-medium text-gray-700">Nama Sekolah</label>
+                                <input type="text" id="pengaturan-nama-sekolah" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+
+                            <div>
+                                <label for="pengaturan-alamat-sekolah" class="block text-sm font-medium text-gray-700">Alamat Sekolah</label>
+                                <textarea id="pengaturan-alamat-sekolah" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-sky-500 text-white py-2 px-4 rounded-lg shadow hover:bg-sky-600 font-medium">
+                                Simpan Pengaturan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </main>
+            
+            <!-- Footer -->
+            <!-- Footer sekarang akan menempel di bawah karena main content mengambil sisa ruang (flex-1) -->
+            <footer class="text-center p-4 text-sm text-gray-600 border-t no-print">
+                ©2025 Admin Candra. All right reserved.
+            </footer>
+        </div>
+    </div>
+    
+    <!-- ===== Modal ===== -->
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div id="modal-content" class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-lg font-semibold text-gray-800">Modal Title</h3>
+                <button id="modal-close-button" class="text-gray-500 hover:text-gray-800">
+                    <i data-lucide="x" class="h-6 w-6"></i>
+                </button>
+            </div>
+            <div id="modal-body">
+                <!-- Modal body content diisi oleh JS -->
+            </div>
+            <div id="modal-footer" class="mt-6 flex justify-end space-x-3">
+                <button id="modal-cancel-button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg shadow hover:bg-gray-300 text-sm font-medium">
+                    Batal
+                </button>
+                <button id="modal-save-button" class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium">
+                    Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast Notification ===== -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transition-all transform translate-x-full opacity-0 z-50">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- ===== PERBAIKAN CETAK KARTU: Container untuk gambar cetak (pop-up-less) ===== -->
+    <!-- Elemen ini akan disembunyikan kecuali saat @media print dipicu oleh JS -->
+    <div id="print-image-container" class="hidden"></div>
+
+
+    <!-- ================================== -->
+    <!--          Firebase & App JS         -->
+    <!-- ================================== -->
+    <script type="module">
+        // ----- Firebase SDK Imports -----
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js"; // Versi diupdate
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js"; // Ditambahkan
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            signInWithPopup,
+            GoogleAuthProvider,
+            onAuthStateChanged, 
+            signOut,
+            signInAnonymously,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js"; // Versi diupdate
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            addDoc,
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection, 
+            query, 
+            where, 
+            getDocs,
+            Timestamp,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js"; // Versi diupdate
+
+        // ----- App Configuration -----
+        
+        // Konfigurasi Firebase dari pengguna (sebagai fallback)
+        const userFirebaseConfig = {
+            apiKey: "AIzaSyBPswtz4eP37NEC0f0fz3LpZRoSGX4IA2c",
+            authDomain: "dfsdf-c13d4.firebaseapp.com",
+            projectId: "dfsdf-c13d4",
+            storageBucket: "dfsdf-c13d4.firebasestorage.app",
+            messagingSenderId: "372576370057",
+            appId: "1:372576370057:web:ae6c98475c41c8aba23558",
+            measurementId: "G-TLCZ89PNLJ"
+        };
+        
+        // Variabel dari environment (Canvas)
+        const envFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        const envAppId = typeof __app_id !== 'undefined' ? __app_id : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Tentukan konfigurasi mana yang akan digunakan
+        let firebaseConfigToUse;
+        let appId;
+
+        if (initialAuthToken && envFirebaseConfig && envAppId) {
+            // Jika berjalan di Canvas dengan token, HARUS menggunakan config dari environment
+            firebaseConfigToUse = JSON.parse(envFirebaseConfig);
+            appId = envAppId;
+            console.log("Menggunakan konfigurasi environment Canvas.");
+        } else {
+            // Jika di luar Canvas (atau token tidak ada), gunakan config hardcode dari pengguna
+            firebaseConfigToUse = userFirebaseConfig;
+            appId = userFirebaseConfig.projectId || 'default-app-id';
+            console.log("Menggunakan konfigurasi Firebase pengguna (hardcoded).");
+        }
+        
+        // ----- Firebase Initialization -----
+        let app, auth, db, userId;
+        let globalSettings = {}; // Menyimpan pengaturan global
+        let unsubscribeListeners = []; // Menyimpan semua listener onSnapshot
+        
+        // PERBAIKAN: Variabel global untuk statistik buku
+        let globalTotalStok = 0;
+        let globalBukuDipinjam = 0;
+
+        // ----- Global State for Pagination -----
+        const paginationState = {};
+
+        // ----- PERBAIKAN GRAFIK: Variabel global untuk menyimpan instance chart -----
+        let dashboardChartInstance = null;
+        
+        // ----- Helper Functions -----
+
+        /**
+         * Menampilkan notifikasi toast
+         * @param {string} message Pesan notifikasi
+         * @param {string} type 'success' (default) atau 'error'
+         */
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            
+            if (type === 'error') {
+                toast.classList.remove('bg-gray-800');
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-gray-800');
+                toast.classList.remove('bg-red-600');
+            }
+            
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 3000);
+        }
+        
+        // PERBAIKAN: Fungsi untuk update stat Total Buku
+        function updateStatTotalBuku() {
+            const bukuTersedia = globalTotalStok - globalBukuDipinjam;
+            document.getElementById('stat-total-buku').textContent = bukuTersedia;
+        }
+
+        /**
+         * Konversi tanggal Firestore Timestamp ke format YYYY-MM-DD
+         * @param {Timestamp} timestamp Objek Timestamp Firestore
+         * @returns {string} Tanggal format YYYY-MM-DD
+         */
+        function timestampToDateInput(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate();
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        /**
+         * Konversi tanggal Firestore Timestamp ke format DD-MM-YYYY
+         * @param {Timestamp} timestamp Objek Timestamp Firestore
+         * @returns {string} Tanggal format DD-MM-YYYY
+         */
+        function formatFirebaseDate(timestamp) {
+            if (!timestamp) return '-';
+            const date = timestamp.toDate();
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${d}-${m}-${y}`;
+        }
+        
+        /**
+         * Konversi string YYYY-MM-DD ke Firestore Timestamp
+         * @param {string} dateString Tanggal format YYYY-MM-DD
+         * @returns {Timestamp} Objek Timestamp Firestore
+         */
+        function dateInputToTimestamp(dateString) {
+            if (!dateString) return null;
+            return Timestamp.fromDate(new Date(dateString));
+        }
+
+        /**
+         * Mendapatkan tanggal hari ini format YYYY-MM-DD
+         * @returns {string} Tanggal hari ini
+         */
+        function getTodayDateString() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        
+        /**
+         * Mendapatkan estimasi tanggal kembali (7 hari dari sekarang)
+         * @returns {string} Tanggal estimasi
+         */
+        function getNextWeekDateString() {
+             const today = new Date();
+             today.setDate(today.getDate() + 7);
+             const y = today.getFullYear();
+             const m = String(today.getMonth() + 1).padStart(2, '0');
+             const d = String(today.getDate()).padStart(2, '0'); // FIX: Mengganti 'date' menjadi 'today'
+             return `${y}-${m}-${d}`;
+        }
+
+        /**
+         * Membersihkan semua listener onSnapshot
+         */
+        function clearAllListeners() {
+            unsubscribeListeners.forEach(unsubscribe => unsubscribe());
+            unsubscribeListeners = [];
+        }
+
+        // ----- Authentication -----
+
+        /**
+         * Inisialisasi Firebase dan Autentikasi
+         */
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfigToUse); // Menggunakan config yang sudah ditentukan
+                const analytics = getAnalytics(app); // Ditambahkan
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    const loginPage = document.getElementById('login-page');
+                    const mainApp = document.getElementById('main-app');
+                    
+                    if (user) {
+                        userId = user.uid; // <-- userId di-set di sini
+                        // User terautentikasi
+                        loginPage.classList.add('hidden');
+                        mainApp.classList.remove('hidden');
+                        document.body.removeAttribute('v-cloak');
+                        
+                        // Muat pengaturan global dan inisialisasi aplikasi
+                        await loadGlobalSettings(); // <-- Panggil setelah userId ada
+                        await initApp(); // Perbaikan: Jadikan initApp async dan await
+                    } else {
+                        // User tidak terautentikasi
+                        userId = null; // <-- userId di-clear di sini
+                        mainApp.classList.add('hidden');
+                        loginPage.classList.remove('hidden');
+                        document.body.removeAttribute('v-cloak');
+                        clearAllListeners(); // Hentikan semua listener jika logout
+                    }
+                });
+                
+                // Coba login dengan custom token jika tersedia
+                if (initialAuthToken) {
+                    // Hanya jalankan jika initialAuthToken ada (dan config sudah sesuai)
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // Jika tidak ada token (mis. di luar Canvas), biarkan onAuthStateChanged 
+                    // menangani status "logged out" (menampilkan login page).
+                    // signInAnonymously() tidak dipanggil agar halaman login Email/Pass/Google berfungsi.
+                    console.log("Tidak ada initialAuthToken, pengguna harus login manual.");
+                }
+
+            } catch (error) {
+                console.error("Firebase Init Error:", error);
+                document.body.innerHTML = `<div class="p-4 bg-red-200 text-red-800 text-center">Error: Gagal menginisialisasi Firebase. Cek konfigurasi. ${error.message}</div>`;
+                document.body.removeAttribute('v-cloak');
+            }
+        }
+        
+        /**
+         * Menampilkan pesan error di halaman login
+         * @param {string} message Pesan error
+         */
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('login-error');
+            const errorMessage = document.getElementById('login-error-message');
+            errorMessage.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+        
+        /**
+         * Logika toggle antara Login dan Register
+         */
+        function setupLoginToggle() {
+            const toRegisterBtn = document.getElementById('toggle-to-register');
+            const toLoginBtn = document.getElementById('toggle-to-login');
+            const loginBtn = document.getElementById('login-button');
+            const registerBtn = document.getElementById('register-button');
+            const loginForm = document.getElementById('login-form');
+            
+            toRegisterBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginBtn.classList.add('hidden');
+                registerBtn.classList.remove('hidden');
+                toRegisterBtn.classList.add('hidden');
+                toLoginBtn.classList.remove('hidden');
+                loginForm.dataset.mode = 'register';
+            });
+            
+            toLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginBtn.classList.remove('hidden');
+                registerBtn.classList.add('hidden');
+                toRegisterBtn.classList.remove('hidden');
+                toLoginBtn.classList.add('hidden');
+                loginForm.dataset.mode = 'login';
+            });
+            
+            // Toggle Password
+            const togglePassword = document.getElementById('toggle-password');
+            const passwordInput = document.getElementById('password');
+            const iconEye = document.getElementById('icon-eye');
+            const iconEyeOff = document.getElementById('icon-eye-off');
+
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                iconEye.classList.toggle('hidden');
+                iconEyeOff.classList.toggle('hidden');
+            });
+        }
+        
+        /**
+         * Menangani submit form Login/Register
+         */
+        function handleLoginSubmit() {
+            const loginForm = document.getElementById('login-form');
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+                const mode = loginForm.dataset.mode || 'login';
+                
+                try {
+                    if (mode === 'login') {
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } else {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                    }
+                    // onAuthStateChanged akan menangani redirect
+                } catch (error) {
+                    console.error("Auth Error:", error);
+                    showLoginError(getFirebaseErrorMessage(error));
+                }
+            });
+        }
+
+        /**
+        * Menangani Login Google
+        */
+        function handleGoogleLogin() {
+            const googleLoginButton = document.getElementById('google-login-button');
+            googleLoginButton.addEventListener('click', async () => {
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    // onAuthStateChanged akan menangani redirect
+                } catch (error) {
+                    console.error("Google Auth Error:", error);
+                    showLoginError(getFirebaseErrorMessage(error));
+                }
+            });
+        }
+
+        /**
+        * Menangani Logout
+        */
+        function handleLogout() {
+            const logoutButton = document.getElementById('logout-button');
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    await signOut(auth);
+                    // onAuthStateChanged akan menangani redirect
+                } catch (error) {
+                    console.error("Logout Error:", error);
+                    showToast("Gagal logout.", "error");
+                }
+            });
+        }
+        
+        /**
+         * Menerjemahkan kode error Firebase
+         * @param {Error} error Objek error Firebase
+         * @returns {string} Pesan error yang mudah dipahami
+         */
+        function getFirebaseErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    return 'Email atau password salah.';
+                case 'auth/email-already-in-use':
+                    return 'Email sudah terdaftar. Silakan login.';
+                case 'auth/weak-password':
+                    return 'Password terlalu lemah (minimal 6 karakter).';
+                case 'auth/invalid-email':
+                    return 'Format email tidak valid.';
+                default:
+                    return 'Terjadi kesalahan. Coba lagi nanti.';
+            }
+        }
+        
+        // ----- Global Settings -----
+
+        /**
+         * Referensi dokumen pengaturan
+         * @returns {import("firebase/firestore").DocumentReference} Referensi doc
+         */
+        function getSettingsRef() {
+            // PERBAIKAN: Menggunakan userId untuk path pengaturan
+            if (!userId) throw new Error("User ID tidak ditemukan. Tidak dapat mengakses pengaturan.");
+            return doc(db, `artifacts/${appId}/users/${userId}/settings`, 'config');
+        }
+
+        /**
+         * Memuat pengaturan global dari Firestore
+         */
+        async function loadGlobalSettings() {
+            const settingsRef = getSettingsRef();
+            
+            // Batalkan listener lama jika ada
+            const oldListener = unsubscribeListeners.find(l => l.id === 'settings');
+            if (oldListener) oldListener();
+
+            // Buat listener baru
+            const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    globalSettings = docSnap.data();
+                } else {
+                    // Buat pengaturan default jika tidak ada
+                    globalSettings = {
+                        logoBase64: '',
+                        instansi1: 'PERPUSTAKAAN',
+                        instansi2: 'DIGITAL',
+                        namaSekolah: 'Nama Sekolah Anda',
+                        alamatSekolah: 'Alamat Sekolah Anda'
+                    };
+                    // Simpan pengaturan default ke path private pengguna
+                    setDoc(settingsRef, globalSettings).catch(err => {
+                        console.error("Gagal menyimpan pengaturan default:", err);
+                    });
+                }
+                updateGlobalUI(globalSettings);
+                updatePengaturanForm(globalSettings);
+            }, (error) => {
+                console.error("Error pada listener pengaturan:", error);
+                showToast("Gagal memuat pengaturan.", "error");
+            });
+            
+            unsubscribe.id = 'settings'; // Tandai listener
+            unsubscribeListeners.push(unsubscribe);
+        }
+
+        /**
+         * Update UI global (sidebar, logo, dll) dengan data pengaturan
+         * @param {object} settings Objek pengaturan
+         */
+        function updateGlobalUI(settings) {
+            // Sidebar
+            document.getElementById('sidebar-school-name').textContent = settings.namaSekolah || 'Nama Sekolah';
+            document.getElementById('sidebar-school-address').textContent = settings.alamatSekolah || 'Alamat Sekolah';
+            if (settings.logoBase64) {
+                document.getElementById('sidebar-logo').src = settings.logoBase64;
+                document.getElementById('login-logo').src = settings.logoBase64;
+                document.getElementById('login-logo').classList.remove('hidden');
+                document.getElementById('login-logo-placeholder').classList.add('hidden');
+            } else {
+                const placeholder = 'https://placehold.co/50x50/38bdf8/ffffff?text=LOGO';
+                document.getElementById('sidebar-logo').src = placeholder;
+                document.getElementById('login-logo').classList.add('hidden');
+                document.getElementById('login-logo-placeholder').classList.remove('hidden');
+                document.getElementById('login-logo-placeholder').src = 'https://placehold.co/100x100/38bdf8/ffffff?text=LOGO';
+            }
+            
+            // Laporan
+            document.getElementById('laporan-instansi-1').textContent = settings.instansi1 || 'Instansi Baris 1';
+            document.getElementById('laporan-instansi-2').textContent = settings.instansi2 || 'Instansi Baris 2';
+            document.getElementById('laporan-nama-sekolah').textContent = settings.namaSekolah || 'Nama Sekolah';
+            document.getElementById('laporan-alamat-sekolah').textContent = settings.alamatSekolah || 'Alamat Sekolah';
+            if (settings.logoBase64) {
+                document.getElementById('laporan-logo').src = settings.logoBase64;
+            } else {
+                 document.getElementById('laporan-logo').src = 'https://placehold.co/80x80/38bdf8/ffffff?text=LOGO';
+            }
+            
+            // Kartu Anggota
+            // Teks "PERPUSTAKAAN" dan "DIGITAL" sudah permanen di HTML.
+            document.getElementById('kartu-nama-sekolah').textContent = settings.namaSekolah || 'Nama Sekolah';
+            
+            // PERBAIKAN: Mengaktifkan kembali update alamat sekolah di kartu anggota
+            document.getElementById('kartu-alamat-sekolah').textContent = settings.alamatSekolah || 'Alamat Sekolah';
+             
+             if (settings.logoBase64) {
+                document.getElementById('kartu-logo').src = settings.logoBase64;
+            } else {
+                 document.getElementById('kartu-logo').src = 'https://placehold.co/50x50/38bdf8/ffffff?text=LOGO';
+            }
+        }
+        
+        /**
+         * Update form pengaturan dengan data terbaru
+         * @param {object} settings Objek pengaturan
+         */
+        function updatePengaturanForm(settings) {
+            document.getElementById('pengaturan-instansi-1').value = settings.instansi1 || '';
+            document.getElementById('pengaturan-instansi-2').value = settings.instansi2 || '';
+            document.getElementById('pengaturan-nama-sekolah').value = settings.namaSekolah || '';
+            document.getElementById('pengaturan-alamat-sekolah').value = settings.alamatSekolah || '';
+            document.getElementById('pengaturan-logo-base64').value = settings.logoBase64 || '';
+            if (settings.logoBase64) {
+                document.getElementById('pengaturan-logo-preview').src = settings.logoBase64;
+            } else {
+                document.getElementById('pengaturan-logo-preview').src = 'https://placehold.co/100x100/38bdf8/ffffff?text=LOGO';
+            }
+        }
+
+        // ----- App Initialization -----
+        
+        /**
+         * Inisialisasi aplikasi utama (setelah login)
+         */
+        async function initApp() { // Perbaikan: Jadikan async
+            lucide.createIcons();
+            initClock();
+            initNavigation();
+            initModals();
+            
+            // Inisialisasi halaman-halaman
+            initDashboard();
+            initPageKelas();
+            initPageBuku();
+            await initPageAnggota(); // Perbaikan: Await inisialisasi anggota
+            initPageTransaksi();
+            initPageKartuAnggota();
+            initPageRiwayat();
+            initPageLaporan();
+            initPagePengaturan();
+            
+            // Tampilkan dashboard sebagai default
+            showPage('dashboard');
+        }
+
+        /**
+         * Inisialisasi jam dan tanggal real-time
+         */
+        function initClock() {
+            const dateEl = document.getElementById('current-date');
+            const timeEl = document.getElementById('current-time');
+            
+            function updateClock() {
+                const now = new Date();
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                
+                dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
+                // PERBAIKAN: Menambahkan WIB (Waktu Indonesia Barat)
+                timeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions) + ' WIB';
+            }
+            
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        /**
+         * Inisialisasi navigasi SPA
+         */
+        function initNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page-container');
+            const transaksiToggle = document.getElementById('transaksi-toggle');
+            const transaksiSubmenu = document.getElementById('transaksi-submenu');
+            const transaksiChevron = document.getElementById('transaksi-chevron');
+            
+            // Kontrol Sidebar Mobile
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+            if (sidebarToggleButton) {
+                sidebarToggleButton.addEventListener('click', () => {
+                    sidebar.classList.toggle('-translate-x-full');
+                    sidebarOverlay.classList.toggle('hidden');
+                });
+            }
+            
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+            // Akhir Kontrol Sidebar Mobile
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.dataset.page;
+                    
+                    if (!pageId) return; // Jika ini tombol dropdown
+
+                    showPage(pageId);
+                    
+                    // Tutup sidebar setelah klik link di mobile
+                    if (window.innerWidth < 768) { // 768px adalah breakpoint 'md'
+                        sidebar.classList.add('-translate-x-full');
+                        sidebarOverlay.classList.add('hidden');
+                    }
+                });
+            });
+            
+            transaksiToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                transaksiSubmenu.classList.toggle('hidden');
+                transaksiChevron.classList.toggle('rotate-90');
+            });
+        }
+        
+        /**
+         * Fungsi untuk menampilkan halaman dan memuat datanya
+         * @param {string} pageId ID halaman (e.g., 'dashboard', 'buku')
+         */
+        function showPage(pageId) {
+            // Sembunyikan semua halaman
+            document.querySelectorAll('.page-container').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Tampilkan halaman yang diminta
+            const activePage = document.getElementById(`page-${pageId}`);
+            if (activePage) {
+                activePage.classList.remove('hidden');
+            }
+            
+            // Set status aktif di sidebar
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active-nav', 'bg-sky-100', 'text-sky-700', 'font-semibold');
+                if (link.dataset.page === pageId) {
+                    link.classList.add('active-nav', 'bg-sky-100', 'text-sky-700', 'font-semibold');
+                    
+                    // Buka submenu jika link ada di dalamnya
+                    const parentSubmenu = link.closest('#transaksi-submenu');
+                    if (parentSubmenu) {
+                        parentSubmenu.classList.remove('hidden');
+                        document.getElementById('transaksi-chevron').classList.add('rotate-90');
+                        document.getElementById('transaksi-toggle').classList.add('active-nav', 'bg-sky-100', 'text-sky-700', 'font-semibold');
+                    }
+                }
+            });
+            
+            // Muat data untuk halaman (jika diperlukan)
+            // Kita akan memuat data menggunakan onSnapshot saat inisialisasi
+            // Jadi tidak perlu memuat ulang di sini, kecuali untuk data yg dinamis
+            if (pageId === 'peminjaman') {
+                loadTransaksiDropdowns();
+            }
+            if (pageId === 'pengembalian') {
+                loadPengembalianDropdown();
+            }
+            if (pageId === 'kartu') {
+                loadAnggotaDropdown('kartu-pilih-anggota');
+            }
+             if (pageId === 'riwayat') {
+                loadAnggotaDropdown('riwayat-pilih-anggota', true);
+            }
+        }
+        
+        // ----- Modal Handling -----
+        
+        const modalContainer = document.getElementById('modal-container');
+        const modalContent = document.getElementById('modal-content');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalSaveButton = document.getElementById('modal-save-button');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalCloseButton = document.getElementById('modal-close-button');
+        
+        let onSaveCallback = null;
+
+        function initModals() {
+            modalCloseButton.addEventListener('click', hideModal);
+            modalCancelButton.addEventListener('click', hideModal);
+            modalContainer.addEventListener('click', (e) => {
+                if (e.target === modalContainer) {
+                    hideModal();
+                }
+            });
+            
+            modalSaveButton.addEventListener('click', () => {
+                if (onSaveCallback) {
+                    onSaveCallback();
+                }
+            });
+        }
+
+        /**
+         * Menampilkan modal
+         * @param {string} title Judul modal
+         * @param {string} bodyHtml HTML untuk body modal
+         * @param {function} onSave Fungsi callback saat tombol Simpan diklik
+         * @param {string} saveText Teks untuk tombol simpan (default: 'Simpan')
+         * @param {string} saveClass Kelas Tailwind untuk tombol simpan (default: 'bg-sky-500 hover:bg-sky-600')
+         */
+        function showModal(title, bodyHtml, onSave, saveText = 'Simpan', saveClass = 'bg-sky-500 hover:bg-sky-600') {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = bodyHtml;
+            onSaveCallback = onSave;
+            
+            modalSaveButton.textContent = saveText;
+            // Ganti seluruh kelas untuk memastikan warna (merah untuk hapus) diterapkan
+            modalSaveButton.className = `${saveClass} text-white px-4 py-2 rounded-lg shadow text-sm font-medium`;
+
+            modalContainer.classList.remove('hidden');
+        }
+        
+        function hideModal() {
+            modalContainer.classList.add('hidden');
+            modalTitle.textContent = '';
+            modalBody.innerHTML = '';
+            onSaveCallback = null;
+            
+            // Kembalikan tombol simpan ke default
+            modalSaveButton.textContent = 'Simpan';
+            modalSaveButton.className = 'bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium';
+        }
+
+        // ----- Pagination Logic -----
+
+        /**
+         * Inisialisasi state pagination untuk sebuah halaman
+         * @param {string} pageKey Kunci unik untuk halaman (e.g., 'buku')
+         */
+        function initPagination(pageKey) {
+            paginationState[pageKey] = {
+                currentPage: 1,
+                rowsPerPage: 10,
+                data: [],
+                filteredData: [],
+                searchTerm: '',
+            };
+            
+            // Event listener untuk select rows per page
+            const rowsSelect = document.getElementById(`table-rows-${pageKey}`);
+            if (rowsSelect) {
+                rowsSelect.addEventListener('change', (e) => {
+                    paginationState[pageKey].rowsPerPage = parseInt(e.target.value, 10);
+                    paginationState[pageKey].currentPage = 1; // Reset ke halaman 1
+                    renderPaginatedTable(pageKey);
+                });
+            }
+            
+             // Event listener untuk search input
+            const searchInput = document.getElementById(`search-${pageKey}`);
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    paginationState[pageKey].searchTerm = e.target.value.toLowerCase();
+                    paginationState[pageKey].currentPage = 1; // Reset ke halaman 1
+                    renderPaginatedTable(pageKey);
+                });
+            }
+        }
+        
+        /**
+         * Render tabel dengan data yang sudah dipaginasi
+         * @param {string} pageKey Kunci halaman
+         * @param {function} filterFn Fungsi untuk memfilter data (opsional)
+         * @param {function} renderFn Fungsi untuk merender HTML tabel
+         */
+        function renderPaginatedTable(pageKey, filterFn, renderFn) {
+            const state = paginationState[pageKey];
+            if (!state) return;
+            
+            const tableBody = document.getElementById(`table-body-${pageKey}`);
+            if (!tableBody) return;
+            
+            // 1. Filter data
+            state.filteredData = state.data;
+            if (state.searchTerm) {
+                 if(filterFn) {
+                    state.filteredData = state.data.filter(item => filterFn(item, state.searchTerm));
+                 }
+            }
+            
+            // 2. Paginate data
+            const totalItems = state.filteredData.length;
+            const totalPages = Math.ceil(totalItems / state.rowsPerPage);
+            state.currentPage = Math.max(1, Math.min(state.currentPage, totalPages || 1));
+            
+            const start = (state.currentPage - 1) * state.rowsPerPage;
+            const end = start + state.rowsPerPage;
+            const paginatedData = state.filteredData.slice(start, end);
+
+            // 3. Render data ke tabel
+            if (renderFn) {
+                tableBody.innerHTML = renderFn(paginatedData);
+            }
+            
+            // 4. Render kontrol pagination
+            renderPaginationControls(pageKey, totalItems, totalPages, start);
+        }
+        
+        /**
+         * Render kontrol pagination (info & tombol)
+         * @param {string} pageKey Kunci halaman
+         * @param {number} totalItems Jumlah total item (setelah filter)
+         * @param {number} totalPages Jumlah total halaman
+         * @param {number} start Indeks item awal
+         */
+        function renderPaginationControls(pageKey, totalItems, totalPages, start) {
+            const paginationContainer = document.getElementById(`pagination-${pageKey}`);
+            if (!paginationContainer) return;
+            
+            const state = paginationState[pageKey];
+            const end = Math.min(start + state.rowsPerPage, totalItems);
+
+            let infoText = 'Tidak ada data';
+            if (totalItems > 0) {
+                infoText = `Menampilkan ${start + 1} - ${end} dari ${totalItems} data`;
+            }
+            
+            paginationContainer.innerHTML = `
+                <span class="text-sm text-gray-700">
+                    ${infoText}
+                </span>
+                <div class="inline-flex items-center space-x-2">
+                    <button data-pagekey="${pageKey}" data-action="prev" class="pagination-prev inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${state.currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}" ${state.currentPage === 1 ? 'disabled' : ''}>
+                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                        <span class="ml-1">Previous</span>
+                    </button>
+                    <button data-pagekey="${pageKey}" data-action="next" class="pagination-next inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${state.currentPage === totalPages || totalPages === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${state.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}>
+                         <span class="mr-1">Next</span>
+                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+            
+            // Add event listeners to new buttons
+            paginationContainer.querySelectorAll('.pagination-prev, .pagination-next').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const key = e.currentTarget.dataset.pagekey;
+                    const action = e.currentTarget.dataset.action;
+                    if (action === 'prev') {
+                        paginationState[key].currentPage--;
+                    } else if (action === 'next') {
+                        paginationState[key].currentPage++;
+                    }
+                    // Trigger re-render
+                    const searchInput = document.getElementById(`search-${key}`);
+                    if(searchInput) {
+                        searchInput.dispatchEvent(new Event('input')); // Cara mudah trigger re-render
+                    } else {
+                        // Jika tidak ada search, panggil manual
+                        const pageConfig = pageConfigurations[key];
+                        if(pageConfig) {
+                             renderPaginatedTable(key, pageConfig.filterFn, pageConfig.renderFn);
+                        }
+                    }
+                });
+            });
+        }
+        
+        // ----- Page Configurations for Pagination -----
+        // Menyimpan fungsi spesifik untuk tiap halaman
+        
+        const pageConfigurations = {
+            'dashboard': {
+                renderFn: (data) => {
+                    if (data.length === 0) return '<tr><td colspan="4" class="px-6 py-4 text-center">Tidak ada aktifitas terbaru.</td></tr>';
+                    return data.map(item => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">${formatFirebaseDate(item.tanggal)}</td>
+                            <td class="px-6 py-4 font-medium text-gray-800">${item.namaAnggota || 'N/A'}</td>
+                            <td class="px-6 py-4">${item.judulBuku || 'N/A'}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium ${item.status === 'dipinjam' ? 'bg-yellow-100 text-yellow-800' : (item.status === 'dikembalikan' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">
+                                    ${item.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+                },
+                filterFn: null // Dashboard tidak ada filter
+            },
+            'buku': {
+                renderFn: (data) => {
+                     if (data.length === 0) return '<tr><td colspan="7" class="px-6 py-4 text-center">Tidak ada data buku.</td></tr>';
+                    return data.map(item => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-medium text-gray-800">${item.judul || '-'}</td>
+                            <td class="px-6 py-4">${item.pengarang || '-'}</td>
+                            <td class="px-6 py-4">${item.penerbit || '-'}</td>
+                            <td class="px-6 py-4">${item.tahunTerbit || '-'}</td>
+                            <td class="px-6 py-4">${item.jumlah || '0'}</td>
+                            <td class="px-6 py-4">${item.kodeBuku || '-'}</td>
+                            <td class="px-6 py-4">
+                                <button class="btn-edit-buku p-1 text-blue-600 hover:text-blue-800" data-id="${item.id}"><i data-lucide="edit-2" class="h-4 w-4"></i></button>
+                                <button class="btn-delete-buku p-1 text-red-600 hover:text-red-800" data-id="${item.id}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                },
+                filterFn: (item, term) => 
+                    (item.judul && item.judul.toLowerCase().includes(term)) ||
+                    (item.pengarang && item.pengarang.toLowerCase().includes(term)) ||
+                    (item.penerbit && item.penerbit.toLowerCase().includes(term)) ||
+                    (item.kodeBuku && item.kodeBuku.toLowerCase().includes(term))
+            },
+            'anggota': {
+                renderFn: (data) => {
+                     if (data.length === 0) return '<tr><td colspan="6" class="px-6 py-4 text-center">Tidak ada data anggota.</td></tr>';
+                    return data.map(item => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-medium text-gray-800">${item.nisn || '-'}</td>
+                            <td class="px-6 py-4">${item.namaLengkap || '-'}</td>
+                            <td class="px-6 py-4">${item.namaKelas || '-'}</td>
+                            <td class="px-6 py-4">${item.noTelepon || '-'}</td>
+                            <td class="px-6 py-4 truncate max-w-xs">${item.alamat || '-'}</td>
+                            <td class="px-6 py-4">
+                                <button class="btn-edit-anggota p-1 text-blue-600 hover:text-blue-800" data-id="${item.id}"><i data-lucide="edit-2" class="h-4 w-4"></i></button>
+                                <button class="btn-delete-anggota p-1 text-red-600 hover:text-red-800" data-id="${item.id}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                },
+                filterFn: (item, term) => 
+                    (item.nisn && item.nisn.toLowerCase().includes(term)) ||
+                    (item.namaLengkap && item.namaLengkap.toLowerCase().includes(term)) ||
+                    (item.namaKelas && item.namaKelas.toLowerCase().includes(term))
+            },
+            'riwayat': {
+                renderFn: (data) => {
+                    if (data.length === 0) return '<tr><td colspan="5" class="px-6 py-4 text-center">Tidak ada riwayat peminjaman.</td></tr>';
+                    return data.map(item => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 font-medium text-gray-800">${item.namaAnggota || 'N/A'}</td>
+                            <td class="px-6 py-4">${item.judulBuku || 'N/A'}</td>
+                            <td class="px-6 py-4">${formatFirebaseDate(item.tglPinjam)}</td>
+                            <td class="px-6 py-4">${formatFirebaseDate(item.tglKembaliReal) || formatFirebaseDate(item.tglKembaliEstimasi) + ' (Est)'}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium ${item.status === 'dipinjam' ? 'bg-yellow-100 text-yellow-800' : (item.status === 'dikembalikan' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">
+                                    ${item.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+                },
+                filterFn: null // Filter riwayat ditangani oleh dropdown
+            }
+        };
+
+        // ----- Firestore Collection References -----
+        
+        // PERBAIKAN: Mengubah semua referensi untuk menggunakan path 'private' berdasarkan userId
+        
+        /**
+         * Mendapatkan referensi koleksi private milik pengguna
+         * @param {string} collectionName Nama koleksi
+         * @returns {import("firebase/firestore").CollectionReference} Referensi koleksi
+         */
+        const getCollectionRef = (collectionName) => {
+            // PERBAIKAN: Menggunakan userId untuk path koleksi
+            if (!userId) {
+                console.error("User ID tidak ditemukan saat mencoba mengakses koleksi:", collectionName);
+                throw new Error("User ID tidak ditemukan. Tidak dapat mengakses koleksi.");
+            }
+            return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`);
+        };
+        
+        /**
+         * Mendapatkan referensi dokumen private milik pengguna
+         * @param {string} collectionName Nama koleksi
+         * @param {string} docId ID dokumen
+         * @returns {import("firebase/firestore").DocumentReference} Referensi dokumen
+         */
+        const getDocRef = (collectionName, docId) => {
+            // PERBAIKAN: Menggunakan userId untuk path dokumen
+            if (!userId) {
+                console.error("User ID tidak ditemukan saat mencoba mengakses dokumen:", collectionName, docId);
+                throw new Error("User ID tidak ditemukan. Tidak dapat mengakses dokumen.");
+            }
+            return doc(db, `artifacts/${appId}/users/${userId}/${collectionName}`, docId);
+        };
+
+        // ----- Page: Dashboard -----
+        
+        function initDashboard() {
+            initPagination('dashboard');
+            initActivityChart();
+            
+            // Stats Listeners
+            const unsubBuku = onSnapshot(getCollectionRef('buku'), (snapshot) => {
+                // PERBAIKAN: Hitung total stok buku, bukan jumlah dokumen
+                globalTotalStok = snapshot.docs.reduce((acc, doc) => acc + (doc.data().jumlah || 0), 0);
+                updateStatTotalBuku(); // Panggil fungsi update
+            }, (error) => console.error("Error listener buku:", error)); // Tambah penanganan error
+            
+            const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
+                document.getElementById('stat-total-anggota').textContent = snapshot.size;
+                document.getElementById('stat-total-siswa-page').textContent = snapshot.size;
+            }, (error) => console.error("Error listener anggota:", error)); // Tambah penanganan error
+            
+            const unsubKelas = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
+                document.getElementById('stat-total-kelas').textContent = snapshot.size;
+                 document.getElementById('stat-total-kelas-page').textContent = snapshot.size;
+            }, (error) => console.error("Error listener kelas:", error)); // Tambah penanganan error
+            
+            // Transaksi Listener (untuk beberapa stat)
+            const unsubTransaksi = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
+                let dipinjamCount = 0;
+                let terlambatList = [];
+                let hariIniList = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // FIX: Ubah cara mapping data untuk menyertakan 'tanggal'
+                const rawData = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Tentukan tanggal aktivitas
+                    let activityDate = null;
+                    if (data.status === 'dikembalikan' && data.tglKembaliReal) {
+                        activityDate = data.tglKembaliReal;
+                    } else if (data.tglPinjam) {
+                        activityDate = data.tglPinjam;
+                    }
+                    return { ...data, id: doc.id, tanggal: activityDate };
+                });
+                
+                // Urutkan berdasarkan tanggal (terbaru dulu)
+                // FIX: Urutkan menggunakan field 'tanggal' yang baru dibuat
+                rawData.sort((a, b) => (b.tanggal ? b.tanggal.toMillis() : 0) - (a.tanggal ? a.tanggal.toMillis() : 0));
+                
+                paginationState['dashboard'].data = rawData;
+                renderPaginatedTable('dashboard', pageConfigurations['dashboard'].filterFn, pageConfigurations['dashboard'].renderFn);
+                lucide.createIcons();
+                
+                // --- PERBAIKAN GRAFIK: LOGIKA PEMROSESAN DATA ---
+                if (dashboardChartInstance) {
+                    const sevenDaysAgo = new Date(today);
+                    sevenDaysAgo.setDate(today.getDate() - 6); // Data untuk 7 hari (today + 6 past days)
+
+                    // Inisialisasi data 7 hari (0=Minggu, 1=Senin, ..., 6=Sabtu)
+                    let peminjamanData = [0, 0, 0, 0, 0, 0, 0];
+                    let pengembalianData = [0, 0, 0, 0, 0, 0, 0];
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        
+                        // Cek Peminjaman
+                        if (data.tglPinjam) {
+                            const tglPinjam = data.tglPinjam.toDate();
+                            if (tglPinjam >= sevenDaysAgo && tglPinjam <= new Date()) { // Cek rentang 7 hari
+                                const dayOfWeek = tglPinjam.getDay(); // 0-6
+                                peminjamanData[dayOfWeek]++;
+                            }
+                        }
+                        
+                        // Cek Pengembalian
+                        if (data.tglKembaliReal) {
+                            const tglKembali = data.tglKembaliReal.toDate();
+                            if (tglKembali >= sevenDaysAgo && tglKembali <= new Date()) { // Cek rentang 7 hari
+                                const dayOfWeek = tglKembali.getDay(); // 0-6
+                                pengembalianData[dayOfWeek]++;
+                            }
+                        }
+                    });
+
+                    // Update data grafik
+                    dashboardChartInstance.data.datasets[0].data = peminjamanData;
+                    dashboardChartInstance.data.datasets[1].data = pengembalianData;
+                    dashboardChartInstance.update();
+                }
+                // --- AKHIR PERBAIKAN GRAFIK ---
+
+                // Proses Notifikasi & Stats (Logika ini sudah ada sebelumnya dan sudah benar)
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const tglPinjam = data.tglPinjam ? data.tglPinjam.toDate() : null;
+                    const tglKembaliReal = data.tglKembaliReal ? data.tglKembaliReal.toDate() : null;
+                    const tglKembaliEstimasi = data.tglKembaliEstimasi ? data.tglKembaliEstimasi.toDate() : null;
+                    
+                    if (data.status === 'dipinjam') {
+                        dipinjamCount++;
+                        // Cek terlambat (Logika ini sudah benar)
+                        if (tglKembaliEstimasi && tglKembaliEstimasi < today) {
+                            terlambatList.push(`<li>${data.namaAnggota} - ${data.judulBuku}</li>`);
+                        }
+                    }
+                    
+                    // Cek aktivitas hari ini
+                    if ((tglPinjam && tglPinjam >= today) || (tglKembaliReal && tglKembaliReal >= today)) {
+                         // PERBAIKAN: Mengubah format string notifikasi aktivitas hari ini
+                         hariIniList.push(`<li>${data.judulBuku} (${data.status}) - ${data.namaAnggota}</li>`);
+                    }
+                });
+
+                // PERBAIKAN: Update variabel global dan panggil fungsi update
+                globalBukuDipinjam = dipinjamCount;
+                document.getElementById('stat-buku-dipinjam').textContent = dipinjamCount; // Ini sudah ada
+                updateStatTotalBuku(); // Panggil fungsi update
+                
+                const noticeTerlambat = document.getElementById('notice-terlambat');
+                noticeTerlambat.innerHTML = terlambatList.length > 0 ? terlambatList.join('') : '<li class="text-gray-500">Tidak ada buku terlambat.</li>';
+                
+                const noticeHariIni = document.getElementById('notice-hari-ini');
+                noticeHariIni.innerHTML = hariIniList.length > 0 ? hariIniList.join('') : '<li class="text-gray-500">Tidak ada aktifitas.</li>';
+            }, (error) => console.error("Error listener transaksi:", error)); // Tambah penanganan error
+
+            unsubscribeListeners.push(unsubBuku, unsubAnggota, unsubKelas, unsubTransaksi);
+        }
+
+        // --- PERBAIKAN GRAFIK: Ubah fungsi inisialisasi ---
+        function initActivityChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            
+            // PERBAIKAN: Ubah label hari (0=Minggu, 6=Sabtu)
+            const data = {
+                labels: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+                datasets: [
+                    {
+                        label: 'Peminjaman',
+                        data: [0, 0, 0, 0, 0, 0, 0], // Mulai dengan data kosong
+                        borderColor: 'rgb(59, 130, 246)', // blue-500
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Pengembalian',
+                        data: [0, 0, 0, 0, 0, 0, 0], // Mulai dengan data kosong
+                        borderColor: 'rgb(16, 185, 129)', // emerald-500
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            };
+            
+            // PERBAIKAN: Simpan instance grafik ke variabel global
+            dashboardChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        // --- AKHIR PERBAIKAN GRAFIK ---
+        
+        // ----- Page: Kelas -----
+
+        function initPageKelas() {
+            // Listener untuk data kelas
+            const unsubKelas = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
+                const tableBody = document.getElementById('table-body-kelas');
+                if (snapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center">Belum ada data kelas.</td></tr>';
+                    return;
+                }
+                
+                // Muat data siswa untuk menghitung jumlah
+                getDocs(getCollectionRef('anggota')).then(anggotaSnapshot => {
+                    const siswaPerKelas = {};
+                    anggotaSnapshot.forEach(doc => {
+                        const kelasId = doc.data().kelasId;
+                        if(kelasId) {
+                            siswaPerKelas[kelasId] = (siswaPerKelas[kelasId] || 0) + 1;
+                        }
+                    });
+
+                    tableBody.innerHTML = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        const id = doc.id;
+                        return `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-medium text-gray-800">${data.namaKelas}</td>
+                                <td class="px-6 py-4">${data.waliKelas}</td>
+                                <td class="px-6 py-4">${siswaPerKelas[id] || 0}</td>
+                                <td class="px-6 py-4">
+                                    <button class="btn-edit-kelas p-1 text-blue-600 hover:text-blue-800" data-id="${id}" data-nama="${data.namaKelas}" data-wali="${data.waliKelas}"><i data-lucide="edit-2" class="h-4 w-4"></i></button>
+                                    <button class="btn-delete-kelas p-1 text-red-600 hover:text-red-800" data-id="${id}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                    lucide.createIcons();
+                });
+            }, (error) => console.error("Error listener page kelas:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubKelas);
+            
+            // Event listener untuk tombol Tambah
+            document.getElementById('add-kelas-button').addEventListener('click', () => {
+                showModalAddKelas();
+            });
+            
+            // Event listener untuk Edit dan Hapus (delegasi)
+            document.getElementById('table-body-kelas').addEventListener('click', (e) => {
+                const editBtn = e.target.closest('.btn-edit-kelas');
+                const deleteBtn = e.target.closest('.btn-delete-kelas');
+                
+                if (editBtn) {
+                    const id = editBtn.dataset.id;
+                    const nama = editBtn.dataset.nama;
+                    const wali = editBtn.dataset.wali;
+                    showModalEditKelas(id, nama, wali);
+                }
+                
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    const nama = deleteBtn.closest('tr').querySelector('td:first-child').textContent; // Ambil nama dari sel pertama
+                    showModal(
+                        'Konfirmasi Hapus',
+                        `<p>Apakah Anda yakin ingin menghapus kelas <strong>${nama}</strong>?</p>`,
+                        () => {
+                            deleteKelas(id);
+                            hideModal(); // Tutup modal setelah hapus
+                        },
+                        'Hapus', // Teks tombol
+                        'bg-red-600 hover:bg-red-700' // Kelas tombol merah
+                    );
+                }
+            });
+        }
+        
+        function getModalKelasBody(nama = '', wali = '') {
+            return `
+                <form id="form-modal-kelas" class="space-y-4">
+                    <div>
+                        <label for="modal-nama-kelas" class="block text-sm font-medium text-gray-700">Nama Kelas</label>
+                        <input type="text" id="modal-nama-kelas" value="${nama}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div>
+                        <label for="modal-wali-kelas" class="block text-sm font-medium text-gray-700">Wali Kelas</label>
+                        <input type="text" id="modal-wali-kelas" value="${wali}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                </form>
+            `;
+        }
+
+        function showModalAddKelas() {
+            showModal('Tambah Kelas', getModalKelasBody(), async () => {
+                const namaKelas = document.getElementById('modal-nama-kelas').value;
+                const waliKelas = document.getElementById('modal-wali-kelas').value;
+                
+                if (!namaKelas || !waliKelas) {
+                    showToast("Nama kelas dan wali kelas harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await addDoc(getCollectionRef('kelas'), { namaKelas, waliKelas });
+                    showToast("Kelas berhasil ditambahkan.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    showToast("Gagal menambahkan kelas.", "error");
+                }
+            });
+        }
+        
+        function showModalEditKelas(id, nama, wali) {
+             showModal('Edit Kelas', getModalKelasBody(nama, wali), async () => {
+                const namaKelas = document.getElementById('modal-nama-kelas').value;
+                const waliKelas = document.getElementById('modal-wali-kelas').value;
+                
+                if (!namaKelas || !waliKelas) {
+                    showToast("Nama kelas dan wali kelas harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await updateDoc(getDocRef('kelas', id), { namaKelas, waliKelas });
+                    showToast("Kelas berhasil diperbarui.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error updating document: ", e);
+                    showToast("Gagal memperbarui kelas.", "error");
+                }
+            });
+        }
+        
+        async function deleteKelas(id) {
+            try {
+                await deleteDoc(getDocRef('kelas', id));
+                showToast("Kelas berhasil dihapus.");
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast("Gagal menghapus kelas.", "error");
+            }
+        }
+        
+        // ----- Page: Data Buku -----
+
+        function initPageBuku() {
+            initPagination('buku');
+            
+            const unsubBuku = onSnapshot(getCollectionRef('buku'), (snapshot) => {
+                paginationState['buku'].data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                renderPaginatedTable('buku', pageConfigurations['buku'].filterFn, pageConfigurations['buku'].renderFn);
+                lucide.createIcons();
+            }, (error) => console.error("Error listener page buku:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubBuku);
+            
+            document.getElementById('add-buku-button').addEventListener('click', () => {
+                showModalAddBuku();
+            });
+            
+            document.getElementById('table-body-buku').addEventListener('click', (e) => {
+                const editBtn = e.target.closest('.btn-edit-buku');
+                const deleteBtn = e.target.closest('.btn-delete-buku');
+                
+                if (editBtn) {
+                    const id = editBtn.dataset.id;
+                    const doc = paginationState['buku'].data.find(item => item.id === id);
+                    showModalEditBuku(doc);
+                }
+                
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    const nama = deleteBtn.closest('tr').querySelector('td:first-child').textContent; // Ambil nama dari sel pertama
+                    showModal(
+                        'Konfirmasi Hapus',
+                        `<p>Apakah Anda yakin ingin menghapus buku <strong>${nama}</strong>?</p>`,
+                        () => {
+                            deleteBuku(id);
+                            hideModal();
+                        },
+                        'Hapus',
+                        'bg-red-600 hover:bg-red-700'
+                    );
+                }
+            });
+        }
+        
+        function getModalBukuBody(buku = {}) {
+            return `
+                <form id="form-modal-buku" class="space-y-4">
+                    <div>
+                        <label for="modal-judul" class="block text-sm font-medium text-gray-700">Judul Buku</label>
+                        <input type="text" id="modal-judul" value="${buku.judul || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div>
+                        <label for="modal-pengarang" class="block text-sm font-medium text-gray-700">Pengarang</label>
+                        <input type="text" id="modal-pengarang" value="${buku.pengarang || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div>
+                        <label for="modal-penerbit" class="block text-sm font-medium text-gray-700">Penerbit</label>
+                        <input type="text" id="modal-penerbit" value="${buku.penerbit || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="modal-tahun" class="block text-sm font-medium text-gray-700">Tahun Terbit</label>
+                            <input type="number" id="modal-tahun" value="${buku.tahunTerbit || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                         <div>
+                            <label for="modal-jumlah" class="block text-sm font-medium text-gray-700">Jumlah</label>
+                            <input type="number" id="modal-jumlah" value="${buku.jumlah || '1'}" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="modal-kode" class="block text-sm font-medium text-gray-700">Kode Buku (Opsional)</label>
+                        <input type="text" id="modal-kode" value="${buku.kodeBuku || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                </form>
+            `;
+        }
+        
+        function showModalAddBuku() {
+            showModal('Tambah Buku', getModalBukuBody(), async () => {
+                const data = {
+                    judul: document.getElementById('modal-judul').value,
+                    pengarang: document.getElementById('modal-pengarang').value,
+                    penerbit: document.getElementById('modal-penerbit').value,
+                    tahunTerbit: document.getElementById('modal-tahun').value,
+                    jumlah: parseInt(document.getElementById('modal-jumlah').value, 10),
+                    kodeBuku: document.getElementById('modal-kode').value,
+                };
+                
+                if (!data.judul || data.jumlah < 0) {
+                    showToast("Judul dan jumlah (min 0) harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await addDoc(getCollectionRef('buku'), data);
+                    showToast("Buku berhasil ditambahkan.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    showToast("Gagal menambahkan buku.", "error");
+                }
+            });
+        }
+        
+        function showModalEditBuku(buku) {
+             showModal('Edit Buku', getModalBukuBody(buku), async () => {
+                const data = {
+                    judul: document.getElementById('modal-judul').value,
+                    pengarang: document.getElementById('modal-pengarang').value,
+                    penerbit: document.getElementById('modal-penerbit').value,
+                    tahunTerbit: document.getElementById('modal-tahun').value,
+                    jumlah: parseInt(document.getElementById('modal-jumlah').value, 10),
+                    kodeBuku: document.getElementById('modal-kode').value,
+                };
+                
+                if (!data.judul || data.jumlah < 0) {
+                    showToast("Judul dan jumlah (min 0) harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await updateDoc(getDocRef('buku', buku.id), data);
+                    showToast("Buku berhasil diperbarui.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error updating document: ", e);
+                    showToast("Gagal memperbarui buku.", "error");
+                }
+            });
+        }
+        
+        async function deleteBuku(id) {
+            try {
+                await deleteDoc(getDocRef('buku', id));
+                showToast("Buku berhasil dihapus.");
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast("Gagal menghapus buku.", "error");
+            }
+        }
+        
+        // ----- Page: Data Anggota -----
+
+        let daftarKelasCache = []; // Cache untuk data kelas
+        
+        async function getDaftarKelas() {
+            // Selalu ambil data terbaru jika cache kosong atau lebih dari 1 menit
+            // Untuk aplikasi multi-user yang datanya terisolasi, cache sederhana sudah cukup
+            if(daftarKelasCache.length > 0) {
+                return daftarKelasCache;
+            }
+            try {
+                const snapshot = await getDocs(getCollectionRef('kelas'));
+                daftarKelasCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return daftarKelasCache;
+            } catch (error) {
+                console.error("Gagal mengambil daftar kelas:", error);
+                return []; // Kembalikan array kosong jika gagal
+            }
+        }
+        
+        async function initPageAnggota() { // Perbaikan: Jadikan async
+            // Perbaikan: Pre-fill cache kelas sebelum listener anggota diatur
+            try {
+                // await getDaftarKelas(); // Panggil untuk mengisi cache
+                // Perbaikan: Tidak perlu panggil di sini, listener di bawah akan mengisinya
+            } catch (err) {
+                console.error("Gagal memuat cache kelas:", err);
+            }
+
+            // Listener untuk update cache kelas (PINDAH KE SINI)
+            const unsubKelasCache = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
+                daftarKelasCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Perbaikan: Re-render tabel anggota jika data sudah ada saat cache kelas diupdate
+                if (paginationState['anggota'] && paginationState['anggota'].data.length > 0) {
+                    paginationState['anggota'].data = paginationState['anggota'].data.map(anggota => {
+                        const kelas = daftarKelasCache.find(k => k.id === anggota.kelasId);
+                        anggota.namaKelas = kelas ? kelas.namaKelas : 'N/A';
+                        return anggota;
+                    });
+                    renderPaginatedTable('anggota', pageConfigurations['anggota'].filterFn, pageConfigurations['anggota'].renderFn);
+                    lucide.createIcons(); // Re-render ikon
+                }
+            }, (error) => console.error("Error listener cache kelas:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubKelasCache); // Tambahkan ke listener untuk auto-cleanup saat logout
+
+            initPagination('anggota');
+            
+            const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
+                paginationState['anggota'].data = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const kelas = daftarKelasCache.find(k => k.id === data.kelasId); // Cache seharusnya sudah terisi
+                    return { ...data, id: doc.id, namaKelas: kelas ? kelas.namaKelas : 'N/A' };
+                });
+                renderPaginatedTable('anggota', pageConfigurations['anggota'].filterFn, pageConfigurations['anggota'].renderFn);
+                lucide.createIcons();
+            }, (error) => console.error("Error listener page anggota:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubAnggota);
+            
+            document.getElementById('add-anggota-button').addEventListener('click', () => {
+                showModalAddAnggota();
+            });
+            
+            document.getElementById('table-body-anggota').addEventListener('click', (e) => {
+                const editBtn = e.target.closest('.btn-edit-anggota');
+                const deleteBtn = e.target.closest('.btn-delete-anggota');
+                
+                if (editBtn) {
+                    const id = editBtn.dataset.id;
+                    const doc = paginationState['anggota'].data.find(item => item.id === id);
+                    showModalEditAnggota(doc);
+                }
+                
+                if (deleteBtn) {
+                    const id = deleteBtn.dataset.id;
+                    const nama = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent; // Ambil nama dari sel kedua
+                    showModal(
+                        'Konfirmasi Hapus',
+                        `<p>Apakah Anda yakin ingin menghapus anggota <strong>${nama}</strong>?</p>`,
+                        () => {
+                            deleteAnggota(id);
+                            hideModal();
+                        },
+                        'Hapus',
+                        'bg-red-600 hover:bg-red-700'
+                    );
+                }
+            });
+        }
+        
+        async function getModalAnggotaBody(anggota = {}) {
+            const daftarKelas = await getDaftarKelas();
+            const kelasOptions = daftarKelas.map(k => 
+                `<option value="${k.id}" ${anggota.kelasId === k.id ? 'selected' : ''}>${k.namaKelas}</option>`
+            ).join('');
+            
+            return `
+                <form id="form-modal-anggota" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="modal-nisn" class="block text-sm font-medium text-gray-700">NISN</label>
+                            <input type="text" id="modal-nisn" value="${anggota.nisn || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                         <div>
+                            <label for="modal-nama" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                            <input type="text" id="modal-nama" value="${anggota.namaLengkap || ''}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="modal-kelas" class="block text-sm font-medium text-gray-700">Kelas</label>
+                            <select id="modal-kelas" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Pilih Kelas</option>
+                                ${kelasOptions}
+                            </select>
+                        </div>
+                         <div>
+                            <label for="modal-telp" class="block text-sm font-medium text-gray-700">No. Telepon (Ortu)</label>
+                            <input type="tel" id="modal-telp" value="${anggota.noTelepon || ''}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="modal-alamat" class="block text-sm font-medium text-gray-700">Alamat</label>
+                        <textarea id="modal-alamat" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">${anggota.alamat || ''}</textarea>
+                    </div>
+                </form>
+            `;
+        }
+        
+        async function showModalAddAnggota() {
+            const body = await getModalAnggotaBody();
+            showModal('Tambah Anggota', body, async () => {
+                const selectedKelasEl = document.getElementById('modal-kelas');
+                const data = {
+                    nisn: document.getElementById('modal-nisn').value,
+                    namaLengkap: document.getElementById('modal-nama').value,
+                    kelasId: selectedKelasEl.value,
+                    namaKelas: selectedKelasEl.options[selectedKelasEl.selectedIndex].text,
+                    noTelepon: document.getElementById('modal-telp').value,
+                    alamat: document.getElementById('modal-alamat').value,
+                };
+                
+                if (!data.nisn || !data.namaLengkap || !data.kelasId) {
+                    showToast("NISN, Nama Lengkap, dan Kelas harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await addDoc(getCollectionRef('anggota'), data);
+                    showToast("Anggota berhasil ditambahkan.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    showToast("Gagal menambahkan anggota.", "error");
+                }
+            });
+        }
+        
+        async function showModalEditAnggota(anggota) {
+             const body = await getModalAnggotaBody(anggota);
+             showModal('Edit Anggota', body, async () => {
+                const selectedKelasEl = document.getElementById('modal-kelas');
+                const data = {
+                    nisn: document.getElementById('modal-nisn').value,
+                    namaLengkap: document.getElementById('modal-nama').value,
+                    kelasId: selectedKelasEl.value,
+                    namaKelas: selectedKelasEl.options[selectedKelasEl.selectedIndex].text,
+                    noTelepon: document.getElementById('modal-telp').value,
+                    alamat: document.getElementById('modal-alamat').value,
+                };
+                
+                 if (!data.nisn || !data.namaLengkap || !data.kelasId) {
+                    showToast("NISN, Nama Lengkap, dan Kelas harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await updateDoc(getDocRef('anggota', anggota.id), data);
+                    showToast("Anggota berhasil diperbarui.");
+                    hideModal();
+                } catch (e) {
+                    console.error("Error updating document: ", e);
+                    showToast("Gagal memperbarui anggota.", "error");
+                }
+            });
+        }
+        
+        async function deleteAnggota(id) {
+            try {
+                await deleteDoc(getDocRef('anggota', id));
+                showToast("Anggota berhasil dihapus.");
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showToast("Gagal menghapus anggota.", "error");
+            }
+        }
+        
+        // ----- Page: Transaksi (Peminjaman & Pengembalian) -----
+        
+        let daftarAnggotaCache = [];
+        let daftarBukuCache = [];
+        let daftarPinjamCache = [];
+        
+        function initPageTransaksi() {
+            // Listener untuk cache anggota
+            const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
+                daftarAnggotaCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }, (error) => console.error("Error listener cache anggota (transaksi):", error));
+            
+            // Listener untuk cache buku
+            const unsubBuku = onSnapshot(getCollectionRef('buku'), (snapshot) => {
+                daftarBukuCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }, (error) => console.error("Error listener cache buku (transaksi):", error));
+            
+            // Listener untuk tabel buku dipinjam & dropdown pengembalian
+            const qDipinjam = query(getCollectionRef('transaksi'), where('status', '==', 'dipinjam'));
+            const unsubPinjam = onSnapshot(qDipinjam, (snapshot) => {
+                daftarPinjamCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTabelDipinjam(daftarPinjamCache);
+                loadPengembalianDropdown(daftarPinjamCache); // Update dropdown jika halaman aktif
+            }, (error) => console.error("Error listener buku dipinjam (transaksi):", error));
+            
+            unsubscribeListeners.push(unsubAnggota, unsubBuku, unsubPinjam);
+            
+            // Form Peminjaman
+            document.getElementById('pinjam-tgl-pinjam').value = getTodayDateString();
+            document.getElementById('pinjam-tgl-kembali').value = getNextWeekDateString();
+            
+            document.getElementById('form-peminjaman').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const anggotaEl = document.getElementById('pinjam-anggota');
+                const bukuEl = document.getElementById('pinjam-buku');
+                
+                const data = {
+                    kode: document.getElementById('pinjam-kode').value || `PJM-${Date.now()}`,
+                    anggotaId: anggotaEl.value,
+                    namaAnggota: anggotaEl.options[anggotaEl.selectedIndex].text,
+                    bukuId: bukuEl.value,
+                    judulBuku: bukuEl.options[bukuEl.selectedIndex].text,
+                    tglPinjam: dateInputToTimestamp(document.getElementById('pinjam-tgl-pinjam').value),
+                    tglKembaliEstimasi: dateInputToTimestamp(document.getElementById('pinjam-tgl-kembali').value),
+                    status: 'dipinjam' // dipinjam, dikembalikan, terlambat
+                };
+                
+                if (!data.anggotaId || !data.bukuId || !data.tglKembaliEstimasi) {
+                    showToast("Anggota, Buku, dan Tgl Kembali harus diisi.", "error");
+                    return;
+                }
+                
+                try {
+                    await addDoc(getCollectionRef('transaksi'), data);
+                    showToast("Peminjaman berhasil disimpan.");
+                    e.target.reset(); // Reset form
+                    document.getElementById('pinjam-tgl-pinjam').value = getTodayDateString();
+                    document.getElementById('pinjam-tgl-kembali').value = getNextWeekDateString();
+                } catch (error) {
+                    console.error("Error adding document: ", error); // Ganti e menjadi error
+                    showToast("Gagal menyimpan peminjaman.", "error");
+                }
+            });
+            
+            // Form Pengembalian
+            document.getElementById('kembali-tgl-real').value = getTodayDateString();
+            
+            document.getElementById('kembali-transaksi').addEventListener('change', (e) => {
+                const detailBox = document.getElementById('kembali-detail');
+                const selectedId = e.target.value;
+                if (!selectedId) {
+                    detailBox.classList.add('hidden');
+                    return;
+                }
+                
+                const trx = daftarPinjamCache.find(t => t.id === selectedId);
+                if (trx) {
+                    document.getElementById('kembali-detail-anggota').textContent = trx.namaAnggota;
+                    document.getElementById('kembali-detail-buku').textContent = trx.judulBuku;
+                    document.getElementById('kembali-detail-tgl-pinjam').textContent = formatFirebaseDate(trx.tglPinjam);
+                    document.getElementById('kembali-detail-tgl-kembali').textContent = formatFirebaseDate(trx.tglKembaliEstimasi) + " (Estimasi)";
+                    detailBox.classList.remove('hidden');
+                }
+            });
+            
+            document.getElementById('form-pengembalian').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const transaksiId = document.getElementById('kembali-transaksi').value;
+                const tglKembaliReal = document.getElementById('kembali-tgl-real').value;
+                
+                if (!transaksiId || !tglKembaliReal) {
+                    showToast("Pilih transaksi dan isi tanggal pengembalian.", "error");
+                    return;
+                }
+                
+                try {
+                    await updateDoc(getDocRef('transaksi', transaksiId), {
+                        status: 'dikembalikan',
+                        tglKembaliReal: dateInputToTimestamp(tglKembaliReal)
+                    });
+                    showToast("Pengembalian buku berhasil disimpan.");
+                    e.target.reset();
+                    document.getElementById('kembali-tgl-real').value = getTodayDateString();
+                    document.getElementById('kembali-detail').classList.add('hidden');
+                } catch (error) {
+                    console.error("Error updating document: ", error);
+                    showToast("Gagal menyimpan pengembalian.", "error");
+                }
+            });
+        }
+        
+        function loadTransaksiDropdowns() {
+            // Load Anggota
+            const anggotaSelect = document.getElementById('pinjam-anggota');
+            anggotaSelect.innerHTML = '<option value="">Pilih Anggota</option>' + 
+                daftarAnggotaCache.map(a => `<option value="${a.id}">${a.namaLengkap} (${a.nisn})</option>`).join('');
+                
+            // Load Buku
+            const bukuSelect = document.getElementById('pinjam-buku');
+            bukuSelect.innerHTML = '<option value="">Pilih Buku</option>' +
+                daftarBukuCache.map(b => `<option value="${b.id}">${b.judul} (${b.kodeBuku || 'N/A'})</option>`).join('');
+        }
+        
+        function renderTabelDipinjam(data) {
+            const tableBody = document.getElementById('table-body-dipinjam');
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center">Tidak ada buku yang sedang dipinjam.</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = data.map(trx => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-800">${trx.namaAnggota}</td>
+                    <td class="px-4 py-3">${trx.judulBuku}</td>
+                    <td class="px-4 py-3">${formatFirebaseDate(trx.tglKembaliEstimasi)}</td>
+                    <td class="px-4 py-3">
+                        <button class="btn-force-return p-1 text-green-600 hover:text-green-800" data-id="${trx.id}" title="Kembalikan Sekarang">
+                            <i data-lucide="check-circle" class="h-4 w-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+            
+            // Event listener untuk tombol force return
+            tableBody.querySelectorAll('.btn-force-return').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    document.getElementById('kembali-transaksi').value = id;
+                    // Trigger change event
+                    document.getElementById('kembali-transaksi').dispatchEvent(new Event('change'));
+                    showPage('pengembalian');
+                });
+            });
+        }
+        
+        function loadPengembalianDropdown(data = null) {
+            const pinjamData = data || daftarPinjamCache;
+            const select = document.getElementById('kembali-transaksi');
+            select.innerHTML = '<option value="">Pilih transaksi yang akan dikembalikan</option>' +
+                pinjamData.map(trx => 
+                    `<option value="${trx.id}">${trx.namaAnggota} - ${trx.judulBuku}</option>`
+                ).join('');
+        }
+        
+        // ----- Page: Kartu Anggota -----
+        
+        function initPageKartuAnggota() {
+            // Load dropdown saat halaman diinisialisasi
+            loadAnggotaDropdown('kartu-pilih-anggota');
+            
+            document.getElementById('kartu-pilih-anggota').addEventListener('change', (e) => {
+                const selectedId = e.target.value;
+                updateKartuPreview(selectedId);
+            });
+            
+            document.getElementById('kartu-download-button').addEventListener('click', () => {
+                const cardElement = document.getElementById('kartu-anggota-preview');
+                const namaAnggota = document.getElementById('kartu-nama').textContent || 'kartu-anggota';
+                
+                html2canvas(cardElement, { scale: 3 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${namaAnggota.replace(/ /g, '_')}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.9);
+                    link.click();
+                }).catch(err => {
+                    console.error("html2canvas error:", err);
+                    showToast("Gagal men-download kartu.", "error");
+                });
+            });
+            
+            document.getElementById('kartu-print-button').addEventListener('click', () => {
+                // PERBAIKAN: Ubah logika cetak untuk mengatasi pop-up blocker di device
+                const cardElement = document.getElementById('kartu-anggota-preview');
+                const cardId = document.getElementById('kartu-nisn').textContent || 'kartu';
+                
+                // Jika tidak ada anggota dipilih, jangan cetak
+                if (cardId === '-') {
+                    showToast("Pilih anggota terlebih dahulu.", "error");
+                    return;
+                }
+
+                // 1. Buka jendela SEGERA (sinkron) untuk menghindari pop-up blocker
+                const printWindow = window.open('', '_blank', 'height=600,width=800');
+                
+                // 2. Cek apakah pop-up diblokir
+                if (!printWindow) {
+                    showToast("Gagal membuka jendela cetak. Izinkan pop-up.", "error");
+                    return;
+                }
+                
+                // Tampilkan pesan loading di jendela baru
+                printWindow.document.write('<html><head><title>Mencetak...</title></head><body><p>Harap tunggu, sedang memproses kartu...</p></body></html>');
+
+                // 3. Jalankan html2canvas (asinkron)
+                html2canvas(cardElement, { scale: 3 }) // Skala 3x untuk resolusi cetak tinggi
+                    .then(canvas => {
+                        const imageData = canvas.toDataURL('image/png'); // Gunakan PNG untuk kualitas
+                        
+                        // 4. Tulis konten ke jendela yang SUDAH DIBUKA
+                        printWindow.document.open(); // Hapus konten "loading"
+                        printWindow.document.write(`
+                            <html>
+                            <head>
+                                <title>Cetak Kartu - ${cardId}</title>
+                                <style>
+                                    /* Atur halaman untuk printer */
+                                    @page {
+                                        size: landscape; /* Orientasi landscape */
+                                        margin: 0.5cm;   /* Beri margin aman */
+                                    }
+                                    body {
+                                        margin: 0;
+                                        padding: 0;
+                                    }
+                                    img {
+                                        /* Paksa ukuran fisik kartu (standar CR80) */
+                                        width: 8.56cm !important;
+                                        height: 5.398cm !important;
+                                        box-shadow: none;
+                                        page-break-inside: avoid; /* Jangan pecah gambar */
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <!-- Tampilkan gambar hasil 'foto' kartu -->
+                                <img src="${imageData}" />
+                                
+                                <script>
+                                    // Panggil print dialog setelah gambar dimuat
+                                    window.onload = function() {
+                                        window.print();
+                                        window.close(); // Tutup jendela setelah dialog print
+                                    };
+                                <\/script> <!-- Escaping /script tag -->
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
+                        
+                    }).catch(err => {
+                        console.error("html2canvas error:", err);
+                        showToast("Gagal memproses kartu untuk dicetak.", "error");
+                        printWindow.close(); // Tutup jendela loading jika gagal
+                    });
+                // --- AKHIR PERBAIKAN POP-UP ---
+            });
+        }
+        
+        async function loadAnggotaDropdown(selectId, tambahSemua = false) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Gunakan cache jika ada, jika tidak, muat ulang
+            let anggota = daftarAnggotaCache;
+            if (anggota.length === 0) {
+                try {
+                    const snapshot = await getDocs(getCollectionRef('anggota'));
+                    anggota = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    daftarAnggotaCache = anggota;
+                } catch (error) {
+                    console.error("Gagal memuat dropdown anggota:", error);
+                    anggota = []; // Set ke array kosong jika gagal
+                }
+            }
+            
+            let options = tambahSemua ? '<option value="semua">Semua Anggota</option>' : '<option value="">Pilih Anggota</option>';
+            options += anggota.map(a => `<option value="${a.id}">${a.namaLengkap} (${a.nisn})</option>`).join('');
+            select.innerHTML = options;
+        }
+        
+        function updateKartuPreview(anggotaId) {
+            let anggota;
+            if(anggotaId) {
+                anggota = daftarAnggotaCache.find(a => a.id === anggotaId);
+            }
+            
+            const nisn = anggota?.nisn || ''; // Simpan NISN
+            
+            document.getElementById('kartu-nama').textContent = anggota?.namaLengkap || '-';
+            document.getElementById('kartu-nisn').textContent = nisn;
+            document.getElementById('kartu-kelas').textContent = anggota?.namaKelas || '-';
+            
+            // PERBAIKAN: Generate QR Code
+            const qrCanvas = document.getElementById('kartu-qr-canvas');
+            if (nisn && typeof QRious === 'function') {
+                try {
+                    new QRious({
+                        element: qrCanvas,
+                        value: nisn,
+                        size: 80, // Sesuaikan dengan w-20 h-20 (80px)
+                        level: 'H' // Error correction
+                    });
+                    qrCanvas.classList.remove('hidden');
+                } catch (e) {
+                    console.error("Gagal generate QR code:", e);
+                    qrCanvas.classList.add('hidden'); // Sembunyikan jika error
+                }
+            } else {
+                // Sembunyikan dan bersihkan jika tidak ada NISN
+                if (qrCanvas) {
+                    // Cek jika canvas ada sebelum membersihkan
+                    const ctx = qrCanvas.getContext('2d');
+                    if(ctx) {
+                        ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+                    }
+                    qrCanvas.classList.add('hidden');
+                }
+            }
+            
+            // Logic untuk foto bisa ditambahkan di sini jika ada field foto
+        }
+        
+        // ----- Page: Riwayat Peminjaman -----
+        
+        let semuaRiwayatCache = [];
+        
+        function initPageRiwayat() {
+            initPagination('riwayat');
+            
+            const unsubRiwayat = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
+                semuaRiwayatCache = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                semuaRiwayatCache.sort((a, b) => (b.tglPinjam || b.tglKembaliReal) - (a.tglPinjam || a.tglKembaliReal)); // Sort terbaru dulu
+                
+                // Render tabel dengan filter "semua"
+                filterRiwayatTabel('semua');
+            }, (error) => console.error("Error listener page riwayat:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubRiwayat);
+            
+            document.getElementById('riwayat-pilih-anggota').addEventListener('change', (e) => {
+                filterRiwayatTabel(e.target.value);
+            });
+        }
+        
+        function filterRiwayatTabel(anggotaId) {
+            let data = semuaRiwayatCache;
+            if (anggotaId !== 'semua') {
+                data = semuaRiwayatCache.filter(trx => trx.anggotaId === anggotaId);
+            }
+            
+            paginationState['riwayat'].data = data;
+            paginationState['riwayat'].currentPage = 1; // Reset halaman
+            renderPaginatedTable('riwayat', null, pageConfigurations['riwayat'].renderFn);
+            lucide.createIcons();
+        }
+
+        // ----- Page: Laporan -----
+        
+        let laporanDataCache = [];
+        
+        function initPageLaporan() {
+            // Muat data laporan sekali saat init
+            const unsubLaporan = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
+                laporanDataCache = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                renderLaporanTabel(laporanDataCache); // Tampilkan semua data awal
+            }, (error) => console.error("Error listener page laporan:", error)); // Tambah penanganan error
+            
+            unsubscribeListeners.push(unsubLaporan);
+            
+            document.getElementById('laporan-filter-button').addEventListener('click', () => {
+                const tglMulai = document.getElementById('laporan-tgl-mulai').value;
+                const tglAkhir = document.getElementById('laporan-tgl-akhir').value;
+                
+                let filteredData = laporanDataCache;
+                
+                if (tglMulai) {
+                    const mulaiTs = dateInputToTimestamp(tglMulai);
+                    filteredData = filteredData.filter(trx => (trx.tglPinjam || trx.tglKembaliReal) >= mulaiTs);
+                }
+                if (tglAkhir) {
+                    // Tambah 1 hari ke tglAkhir untuk inklusif
+                    let akhirDate = new Date(tglAkhir);
+                    akhirDate.setDate(akhirDate.getDate() + 1);
+                    const akhirTs = Timestamp.fromDate(akhirDate);
+                    filteredData = filteredData.filter(trx => (trx.tglPinjam || trx.tglKembaliReal) < akhirTs);
+                }
+                
+                renderLaporanTabel(filteredData);
+                
+                // Update periode
+                 document.getElementById('laporan-periode').textContent = `${tglMulai || '?'} s/d ${tglAkhir || '?'}`;
+            });
+            
+            document.getElementById('laporan-reset-button').addEventListener('click', () => {
+                 document.getElementById('laporan-tgl-mulai').value = '';
+                 document.getElementById('laporan-tgl-akhir').value = '';
+                 renderLaporanTabel(laporanDataCache);
+                 document.getElementById('laporan-periode').textContent = 'Semua data';
+            });
+            
+            document.getElementById('laporan-print-button').addEventListener('click', () => {
+                window.print();
+            });
+        }
+        
+        function renderLaporanTabel(data) {
+            const tableBody = document.getElementById('table-body-laporan');
+            if (data.length === 0) {
+                 tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center">Tidak ada data untuk ditampilkan.</td></tr>';
+                 return;
+            }
+            
+            tableBody.innerHTML = data.map((trx, index) => `
+                <tr>
+                    <td class="px-6 py-3">${index + 1}</td>
+                    <td class="px-6 py-3">${trx.namaAnggota || 'N/A'}</td>
+                    <td class="px-6 py-3">${trx.kode || 'N/A'}</td>
+                    <td class="px-6 py-3">${trx.judulBuku || 'N/A'}</td>
+                    <td class="px-6 py-3">${formatFirebaseDate(trx.tglPinjam)}</td>
+                    <td class="px-6 py-3">${formatFirebaseDate(trx.tglKembaliReal) || '-'}</td>
+                    <td class="px-6 py-3">
+                         <span class="px-2 py-0.5 rounded-full text-xs font-medium ${trx.status === 'dipinjam' ? 'bg-yellow-100 text-yellow-800' : (trx.status === 'dikembalikan' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}">
+                            ${trx.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ----- Page: Pengaturan -----
+        
+        function initPagePengaturan() {
+            // Data sudah dimuat oleh loadGlobalSettings()
+            
+            // Handle image upload to base64
+            document.getElementById('pengaturan-logo-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64String = reader.result;
+                    document.getElementById('pengaturan-logo-preview').src = base64String;
+                    document.getElementById('pengaturan-logo-base64').value = base64String;
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // Handle form save
+            document.getElementById('form-pengaturan').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const data = {
+                    logoBase64: document.getElementById('pengaturan-logo-base64').value,
+                    instansi1: document.getElementById('pengaturan-instansi-1').value,
+                    instansi2: document.getElementById('pengaturan-instansi-2').value,
+                    namaSekolah: document.getElementById('pengaturan-nama-sekolah').value,
+                    alamatSekolah: document.getElementById('pengaturan-alamat-sekolah').value,
+                };
+                
+                try {
+                    await setDoc(getSettingsRef(), data, { merge: true });
+                    showToast("Pengaturan berhasil disimpan.");
+                    // UI akan terupdate otomatis oleh onSnapshot
+                } catch (error) {
+                    console.error("Error saving settings: ", error);
+                    showToast("Gagal menyimpan pengaturan.", "error");
+                }
+            });
+        }
+        
+        // ----- Entry Point -----
+        setupLoginToggle();
+        handleLoginSubmit();
+        handleGoogleLogin();
+        handleLogout();
+        initFirebase();
+
+    </script>
+</body>
+</html>
