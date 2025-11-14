@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perpustakaan Digital</title>
     
+    <!-- PERBAIKAN: Favicon SVG diberi ID agar bisa diubah oleh JS -->
+    <link id="favicon-link" rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2338bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>'>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -17,7 +20,7 @@
     <!-- html2canvas for Member Card Download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- PERBAIKAN: Mengganti JsBarcode dengan Qrious (QR Code) -->
+    <!-- Qrious (QR Code) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
     <style>
@@ -95,9 +98,6 @@
             }
             /* --- Akhir Fix Laporan --- */
         }
-        
-        /* Kustomisasi gaya cetak untuk kartu (diterapkan di pop-up) */
-        /* PERBAIKAN: Menghapus aturan @page global yang bentrok dengan laporan */
         
     </style>
 </head>
@@ -257,11 +257,10 @@
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
 
         <!-- ===== Main Content ===== -->
-        <!-- PERBAIKAN: Menambahkan min-w-0 untuk mencegah sidebar mengkerut saat tabel overflow -->
         <div class="flex-1 flex flex-col min-w-0">
             
             <!-- Top Header -->
-            <header class="h-16 md:h-20 bg-white shadow-sm flex items-center justify-between px-6 no-print"> <!-- Tinggi dan justify disesuaikan -->
+            <header class="h-16 md:h-20 bg-white shadow-sm flex items-center justify-between px-6 no-print">
                 
                 <!-- Hamburger Menu Button (Mobile) -->
                 <button id="sidebar-toggle-button" class="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
@@ -271,14 +270,43 @@
                 <!-- Spacer (invisible on mobile, so date/time shifts right) -->
                 <div class="hidden md:block"></div> 
 
-                <div class="text-right">
-                    <div id="current-date" class="text-sm font-semibold text-gray-800"></div>
-                    <div id="current-time" class="text-xs text-gray-600"></div>
+                <!-- Wrapper untuk Notifikasi dan Jam -->
+                <div class="flex items-center gap-4">
+                    
+                    <!-- PERBAIKAN: Blok Tanggal/Jam dipindahkan ke atas (sebelum lonceng) -->
+                    <!-- Tanggal dan Jam (Existing) -->
+                    <div class="text-right">
+                        <div id="current-date" class="text-sm font-semibold text-gray-800"></div>
+                        <div id="current-time" class="text-xs text-gray-600"></div>
+                    </div>
+
+                    <!-- Tombol Notifikasi (Sekarang setelah Tanggal/Jam) -->
+                    <div class="relative">
+                        <button id="notification-button" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 relative">
+                            <i data-lucide="bell" class="h-5 w-5"></i>
+                            <span id="notification-badge" class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hidden">
+                                0
+                            </span>
+                        </button>
+                        
+                        <!-- Panel Notifikasi -->
+                        <div id="notification-panel" class="hidden absolute right-0 mt-2 w-64 md:w-80 bg-white rounded-lg shadow-xl z-50 overflow-hidden border">
+                            <div class="p-3 font-semibold text-sm border-b text-gray-800">Aktivitas Terbaru</div>
+                            <ul id="notification-list" class="max-h-64 overflow-y-auto divide-y">
+                                <!-- PERBAIKAN: Teks default baru -->
+                                <li class="p-3 text-sm text-gray-500 text-center">Tidak ada aktivitas terbaru.</li>
+                            </ul>
+                            <div class="p-2 bg-gray-50 border-t text-center">
+                                <!-- PERBAIKAN: Teks tombol baru -->
+                                <button id="mark-all-read-button" class="text-xs text-sky-600 hover:underline">Bersihkan Log</button>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </header>
             
             <!-- Page Content Wrapper -->
-            <!-- PERBAIKAN: flex-1 dan overflow-y-auto sudah benar di sini -->
             <main id="page-content" class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
                 
                 <!-- ===== Dashboard Page ===== -->
@@ -459,7 +487,6 @@
                             </button>
                         </div>
                         <!-- Table controls -->
-                        <!-- flex-col sm:flex-row sudah ada -->
                         <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-4">
                             <div class="flex items-center space-x-2">
                                 <label for="table-rows-buku" class="text-sm text-gray-600">Tampil:</label>
@@ -481,7 +508,7 @@
                                     <tr>
                                         <th scope="col" class="px-6 py-3">Judul Buku</th>
                                         <th scope="col" class="px-6 py-3">Pengarang</th>
-                                        <th scope="col" class_disabled="px-6 py-3">Penerbit</th>
+                                        <th scope="col" class="px-6 py-3">Penerbit</th>
                                         <th scope="col" class="px-6 py-3">Tahun</th>
                                         <th scope="col" class="px-6 py-3">Jumlah</th>
                                         <th scope="col" class="px-6 py-3">Kode</th>
@@ -512,7 +539,6 @@
                             </button>
                         </div>
                         <!-- Table controls -->
-                        <!-- flex-col sm:flex-row sudah ada -->
                         <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-4">
                             <div class="flex items-center space-x-2">
                                 <label for="table-rows-anggota" class="text-sm text-gray-600">Tampil:</label>
@@ -671,10 +697,10 @@
                         <!-- Card Preview Area -->
                         <div id="kartu-anggota-print-area" class="flex justify-center items-center bg-gray-100 p-6 rounded-lg">
                             
-                            <!-- ===== PERBAIKAN: DESAIN ULANG KARTU ANGGOTA ===== -->
+                            <!-- ===== DESAIN KARTU ANGGOTA ===== -->
                             <div id="kartu-anggota-preview" class="bg-white rounded-xl shadow-lg w-full max-w-[540px] aspect-[85.6/53.98] flex flex-col overflow-hidden relative">
                                 
-                                <!-- PERBAIKAN: Ornamen Keren Berwarna -->
+                                <!-- Ornamen Keren Berwarna -->
                                 <div class="absolute inset-0 w-full h-full z-0" 
                                      style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3z' fill='%2390cdf4' fill-opacity='0.6' fill-rule='evenodd'/%3E%3C/svg%3E&quot;); background-size: 25px 25px;">
                                 </div>
@@ -684,11 +710,13 @@
                                     <div class="flex items-center">
                                         <img id="kartu-logo" src="https://placehold.co/50x50/38bdf8/ffffff?text=LOGO" alt="Logo" class="h-12 w-12 rounded-full mr-3">
                                         <div>
+                                            <!-- Teks permanen -->
                                             <p class="text-xs font-bold uppercase text-sky-700">PERPUSTAKAAN</p>
                                             <p id="kartu-nama-sekolah" class="text-sm font-semibold text-gray-800">Nama Sekolah</p>
                                         </div>
                                     </div>
                                     <div class="text-right">
+                                        <!-- Teks permanen -->
                                         <p class="text-lg font-bold text-sky-600 leading-tight">DIGITAL</p>
                                         <p class="text-xs text-gray-500">Kartu Anggota</p>
                                     </div>
@@ -718,11 +746,9 @@
                                             <p id="kartu-kelas" class="text-base font-medium text-gray-700">-</p>
                                         </div>
                                     </div>
-                                    <!-- Col 3: Barcode -->
+                                    <!-- Col 3: QR Code -->
                                     <div class="w-1/3 flex flex-col items-center justify-center text-center px-2">
-                                        <!-- PERBAIKAN: Teks diubah -->
                                         <p class="text-xs text-gray-500 mb-1">QR Code</p>
-                                        <!-- PERBAIKAN: Diganti dari <svg> ke <canvas> untuk QrCode -->
                                         <canvas id="kartu-qr-canvas" class="w-20 h-20 hidden"></canvas>
                                     </div>
                                 </div>
@@ -732,7 +758,7 @@
                                     <p id="kartu-alamat-sekolah" class="text-xs text-gray-600 italic">Alamat Sekolah</p>
                                 </div>
                             </div>
-                            <!-- ===== AKHIR DESAIN ULANG KARTU ===== -->
+                            <!-- ===== AKHIR DESAIN KARTU ===== -->
 
                         </div>
                     </div>
@@ -833,7 +859,6 @@
                                 <div class="flex items-center">
                                     <img id="laporan-logo" src="https://placehold.co/80x80/38bdf8/ffffff?text=LOGO" alt="Logo" class="h-20 w-20 mr-4">
                                     <div class="text-center flex-1">
-                                        <!-- PERBAIKAN: Ukuran font diubah ke 13pt dan class text-xl dihapus -->
                                         <h3 id="laporan-instansi-1" class="font-bold uppercase" style="font-size: 13pt;">Nama Instansi Baris 1</h3>
                                         <h3 id="laporan-instansi-2" class="font-bold uppercase" style="font-size: 13pt;">Nama Instansi Baris 2</h3>
                                         <h4 id="laporan-nama-sekolah" class="text-lg font-semibold">Nama Sekolah</h4>
@@ -910,12 +935,23 @@
                             </button>
                         </form>
                     </div>
+                    
+                    <!-- Zona Berbahaya (Hapus Data) -->
+                    <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto mt-6 border-t-4 border-red-500">
+                        <h3 class="text-lg font-semibold text-red-700 mb-2">Zona Berbahaya</h3>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Tindakan ini akan menghapus semua data konten (buku, anggota, kelas, transaksi, dan log aktivitas) secara permanen. Pengaturan Anda (logo, nama sekolah) tidak akan terhapus.
+                        </p>
+                        <button id="delete-all-data-button" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg shadow hover:bg-red-700 font-medium">
+                            Hapus Semua Data Konten
+                        </button>
+                    </div>
+                    
                 </div>
 
             </main>
             
             <!-- Footer -->
-            <!-- Footer sekarang akan menempel di bawah karena main content mengambil sisa ruang (flex-1) -->
             <footer class="text-center p-4 text-sm text-gray-600 border-t no-print">
                 ©2025 Admin Candra. All right reserved.
             </footer>
@@ -950,8 +986,7 @@
         <span id="toast-message"></span>
     </div>
 
-    <!-- ===== PERBAIKAN CETAK KARTU: Container untuk gambar cetak (pop-up-less) ===== -->
-    <!-- Elemen ini akan disembunyikan kecuali saat @media print dipicu oleh JS -->
+    <!-- Container untuk gambar cetak (pop-up-less) -->
     <div id="print-image-container" class="hidden"></div>
 
 
@@ -960,8 +995,8 @@
     <!-- ================================== -->
     <script type="module">
         // ----- Firebase SDK Imports -----
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js"; // Versi diupdate
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js"; // Ditambahkan
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-analytics.js";
         import { 
             getAuth, 
             signInWithEmailAndPassword,
@@ -972,7 +1007,7 @@
             signOut,
             signInAnonymously,
             signInWithCustomToken
-        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js"; // Versi diupdate
+        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
         import { 
             getFirestore, 
             doc, 
@@ -987,12 +1022,14 @@
             where, 
             getDocs,
             Timestamp,
-            serverTimestamp
-        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js"; // Versi diupdate
+            serverTimestamp,
+            writeBatch,
+            orderBy, // PERBAIKAN: Import orderBy
+            limit // PERBAIKAN: Import limit
+        } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
         // ----- App Configuration -----
         
-        // Konfigurasi Firebase dari pengguna (sebagai fallback)
         const userFirebaseConfig = {
             apiKey: "AIzaSyBPswtz4eP37NEC0f0fz3LpZRoSGX4IA2c",
             authDomain: "dfsdf-c13d4.firebaseapp.com",
@@ -1003,22 +1040,18 @@
             measurementId: "G-TLCZ89PNLJ"
         };
         
-        // Variabel dari environment (Canvas)
         const envFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
         const envAppId = typeof __app_id !== 'undefined' ? __app_id : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // Tentukan konfigurasi mana yang akan digunakan
         let firebaseConfigToUse;
         let appId;
 
         if (initialAuthToken && envFirebaseConfig && envAppId) {
-            // Jika berjalan di Canvas dengan token, HARUS menggunakan config dari environment
             firebaseConfigToUse = JSON.parse(envFirebaseConfig);
             appId = envAppId;
             console.log("Menggunakan konfigurasi environment Canvas.");
         } else {
-            // Jika di luar Canvas (atau token tidak ada), gunakan config hardcode dari pengguna
             firebaseConfigToUse = userFirebaseConfig;
             appId = userFirebaseConfig.projectId || 'default-app-id';
             console.log("Menggunakan konfigurasi Firebase pengguna (hardcoded).");
@@ -1026,26 +1059,22 @@
         
         // ----- Firebase Initialization -----
         let app, auth, db, userId;
-        let globalSettings = {}; // Menyimpan pengaturan global
-        let unsubscribeListeners = []; // Menyimpan semua listener onSnapshot
+        let globalSettings = {};
+        let unsubscribeListeners = [];
         
-        // PERBAIKAN: Variabel global untuk statistik buku
         let globalTotalStok = 0;
         let globalBukuDipinjam = 0;
 
         // ----- Global State for Pagination -----
         const paginationState = {};
 
-        // ----- PERBAIKAN GRAFIK: Variabel global untuk menyimpan instance chart -----
         let dashboardChartInstance = null;
         
+        // PERBAIKAN: Variabel Global Notifikasi (sekarang untuk log aktivitas)
+        let globalNotifications = []; // Menyimpan log aktivitas terbaru
+
         // ----- Helper Functions -----
 
-        /**
-         * Menampilkan notifikasi toast
-         * @param {string} message Pesan notifikasi
-         * @param {string} type 'success' (default) atau 'error'
-         */
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toast-message');
@@ -1069,17 +1098,11 @@
             }, 3000);
         }
         
-        // PERBAIKAN: Fungsi untuk update stat Total Buku
         function updateStatTotalBuku() {
             const bukuTersedia = globalTotalStok - globalBukuDipinjam;
             document.getElementById('stat-total-buku').textContent = bukuTersedia;
         }
 
-        /**
-         * Konversi tanggal Firestore Timestamp ke format YYYY-MM-DD
-         * @param {Timestamp} timestamp Objek Timestamp Firestore
-         * @returns {string} Tanggal format YYYY-MM-DD
-         */
         function timestampToDateInput(timestamp) {
             if (!timestamp) return '';
             const date = timestamp.toDate();
@@ -1089,11 +1112,6 @@
             return `${y}-${m}-${d}`;
         }
 
-        /**
-         * Konversi tanggal Firestore Timestamp ke format DD-MM-YYYY
-         * @param {Timestamp} timestamp Objek Timestamp Firestore
-         * @returns {string} Tanggal format DD-MM-YYYY
-         */
         function formatFirebaseDate(timestamp) {
             if (!timestamp) return '-';
             const date = timestamp.toDate();
@@ -1103,20 +1121,11 @@
             return `${d}-${m}-${y}`;
         }
         
-        /**
-         * Konversi string YYYY-MM-DD ke Firestore Timestamp
-         * @param {string} dateString Tanggal format YYYY-MM-DD
-         * @returns {Timestamp} Objek Timestamp Firestore
-         */
         function dateInputToTimestamp(dateString) {
             if (!dateString) return null;
             return Timestamp.fromDate(new Date(dateString));
         }
 
-        /**
-         * Mendapatkan tanggal hari ini format YYYY-MM-DD
-         * @returns {string} Tanggal hari ini
-         */
         function getTodayDateString() {
             const today = new Date();
             const y = today.getFullYear();
@@ -1125,22 +1134,15 @@
             return `${y}-${m}-${d}`;
         }
         
-        /**
-         * Mendapatkan estimasi tanggal kembali (7 hari dari sekarang)
-         * @returns {string} Tanggal estimasi
-         */
         function getNextWeekDateString() {
              const today = new Date();
              today.setDate(today.getDate() + 7);
              const y = today.getFullYear();
              const m = String(today.getMonth() + 1).padStart(2, '0');
-             const d = String(today.getDate()).padStart(2, '0'); // FIX: Mengganti 'date' menjadi 'today'
+             const d = String(today.getDate()).padStart(2, '0');
              return `${y}-${m}-${d}`;
         }
 
-        /**
-         * Membersihkan semua listener onSnapshot
-         */
         function clearAllListeners() {
             unsubscribeListeners.forEach(unsubscribe => unsubscribe());
             unsubscribeListeners = [];
@@ -1148,13 +1150,10 @@
 
         // ----- Authentication -----
 
-        /**
-         * Inisialisasi Firebase dan Autentikasi
-         */
         async function initFirebase() {
             try {
-                app = initializeApp(firebaseConfigToUse); // Menggunakan config yang sudah ditentukan
-                const analytics = getAnalytics(app); // Ditambahkan
+                app = initializeApp(firebaseConfigToUse);
+                const analytics = getAnalytics(app);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
@@ -1163,33 +1162,25 @@
                     const mainApp = document.getElementById('main-app');
                     
                     if (user) {
-                        userId = user.uid; // <-- userId di-set di sini
-                        // User terautentikasi
+                        userId = user.uid;
                         loginPage.classList.add('hidden');
                         mainApp.classList.remove('hidden');
                         document.body.removeAttribute('v-cloak');
                         
-                        // Muat pengaturan global dan inisialisasi aplikasi
-                        await loadGlobalSettings(); // <-- Panggil setelah userId ada
-                        await initApp(); // Perbaikan: Jadikan initApp async dan await
+                        await loadGlobalSettings();
+                        await initApp();
                     } else {
-                        // User tidak terautentikasi
-                        userId = null; // <-- userId di-clear di sini
+                        userId = null;
                         mainApp.classList.add('hidden');
                         loginPage.classList.remove('hidden');
                         document.body.removeAttribute('v-cloak');
-                        clearAllListeners(); // Hentikan semua listener jika logout
+                        clearAllListeners();
                     }
                 });
                 
-                // Coba login dengan custom token jika tersedia
                 if (initialAuthToken) {
-                    // Hanya jalankan jika initialAuthToken ada (dan config sudah sesuai)
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
-                    // Jika tidak ada token (mis. di luar Canvas), biarkan onAuthStateChanged 
-                    // menangani status "logged out" (menampilkan login page).
-                    // signInAnonymously() tidak dipanggil agar halaman login Email/Pass/Google berfungsi.
                     console.log("Tidak ada initialAuthToken, pengguna harus login manual.");
                 }
 
@@ -1200,10 +1191,6 @@
             }
         }
         
-        /**
-         * Menampilkan pesan error di halaman login
-         * @param {string} message Pesan error
-         */
         function showLoginError(message) {
             const errorDiv = document.getElementById('login-error');
             const errorMessage = document.getElementById('login-error-message');
@@ -1211,9 +1198,6 @@
             errorDiv.classList.remove('hidden');
         }
         
-        /**
-         * Logika toggle antara Login dan Register
-         */
         function setupLoginToggle() {
             const toRegisterBtn = document.getElementById('toggle-to-register');
             const toLoginBtn = document.getElementById('toggle-to-login');
@@ -1239,7 +1223,6 @@
                 loginForm.dataset.mode = 'login';
             });
             
-            // Toggle Password
             const togglePassword = document.getElementById('toggle-password');
             const passwordInput = document.getElementById('password');
             const iconEye = document.getElementById('icon-eye');
@@ -1253,9 +1236,6 @@
             });
         }
         
-        /**
-         * Menangani submit form Login/Register
-         */
         function handleLoginSubmit() {
             const loginForm = document.getElementById('login-form');
             loginForm.addEventListener('submit', async (e) => {
@@ -1270,7 +1250,6 @@
                     } else {
                         await createUserWithEmailAndPassword(auth, email, password);
                     }
-                    // onAuthStateChanged akan menangani redirect
                 } catch (error) {
                     console.error("Auth Error:", error);
                     showLoginError(getFirebaseErrorMessage(error));
@@ -1278,16 +1257,12 @@
             });
         }
 
-        /**
-        * Menangani Login Google
-        */
         function handleGoogleLogin() {
             const googleLoginButton = document.getElementById('google-login-button');
             googleLoginButton.addEventListener('click', async () => {
                 const provider = new GoogleAuthProvider();
                 try {
                     await signInWithPopup(auth, provider);
-                    // onAuthStateChanged akan menangani redirect
                 } catch (error) {
                     console.error("Google Auth Error:", error);
                     showLoginError(getFirebaseErrorMessage(error));
@@ -1295,15 +1270,11 @@
             });
         }
 
-        /**
-        * Menangani Logout
-        */
         function handleLogout() {
             const logoutButton = document.getElementById('logout-button');
             logoutButton.addEventListener('click', async () => {
                 try {
                     await signOut(auth);
-                    // onAuthStateChanged akan menangani redirect
                 } catch (error) {
                     console.error("Logout Error:", error);
                     showToast("Gagal logout.", "error");
@@ -1311,11 +1282,6 @@
             });
         }
         
-        /**
-         * Menerjemahkan kode error Firebase
-         * @param {Error} error Objek error Firebase
-         * @returns {string} Pesan error yang mudah dipahami
-         */
         function getFirebaseErrorMessage(error) {
             switch (error.code) {
                 case 'auth/user-not-found':
@@ -1334,32 +1300,22 @@
         
         // ----- Global Settings -----
 
-        /**
-         * Referensi dokumen pengaturan
-         * @returns {import("firebase/firestore").DocumentReference} Referensi doc
-         */
         function getSettingsRef() {
-            // PERBAIKAN: Menggunakan userId untuk path pengaturan
             if (!userId) throw new Error("User ID tidak ditemukan. Tidak dapat mengakses pengaturan.");
+            // PERBAIKAN: Semua data, termasuk pengaturan, sekarang private
             return doc(db, `artifacts/${appId}/users/${userId}/settings`, 'config');
         }
 
-        /**
-         * Memuat pengaturan global dari Firestore
-         */
         async function loadGlobalSettings() {
             const settingsRef = getSettingsRef();
             
-            // Batalkan listener lama jika ada
             const oldListener = unsubscribeListeners.find(l => l.id === 'settings');
             if (oldListener) oldListener();
 
-            // Buat listener baru
             const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
                 if (docSnap.exists()) {
                     globalSettings = docSnap.data();
                 } else {
-                    // Buat pengaturan default jika tidak ada
                     globalSettings = {
                         logoBase64: '',
                         instansi1: 'PERPUSTAKAAN',
@@ -1367,7 +1323,6 @@
                         namaSekolah: 'Nama Sekolah Anda',
                         alamatSekolah: 'Alamat Sekolah Anda'
                     };
-                    // Simpan pengaturan default ke path private pengguna
                     setDoc(settingsRef, globalSettings).catch(err => {
                         console.error("Gagal menyimpan pengaturan default:", err);
                     });
@@ -1379,16 +1334,20 @@
                 showToast("Gagal memuat pengaturan.", "error");
             });
             
-            unsubscribe.id = 'settings'; // Tandai listener
+            unsubscribe.id = 'settings';
             unsubscribeListeners.push(unsubscribe);
         }
 
-        /**
-         * Update UI global (sidebar, logo, dll) dengan data pengaturan
-         * @param {object} settings Objek pengaturan
-         */
         function updateGlobalUI(settings) {
-            // Sidebar
+            const faviconLink = document.getElementById('favicon-link');
+            const defaultFaviconHref = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2338bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>';
+            
+            if (settings.logoBase64 && settings.logoBase64.startsWith('data:image/')) {
+                faviconLink.href = settings.logoBase64;
+            } else {
+                faviconLink.href = defaultFaviconHref;
+            }
+            
             document.getElementById('sidebar-school-name').textContent = settings.namaSekolah || 'Nama Sekolah';
             document.getElementById('sidebar-school-address').textContent = settings.alamatSekolah || 'Alamat Sekolah';
             if (settings.logoBase64) {
@@ -1404,7 +1363,6 @@
                 document.getElementById('login-logo-placeholder').src = 'https://placehold.co/100x100/38bdf8/ffffff?text=LOGO';
             }
             
-            // Laporan
             document.getElementById('laporan-instansi-1').textContent = settings.instansi1 || 'Instansi Baris 1';
             document.getElementById('laporan-instansi-2').textContent = settings.instansi2 || 'Instansi Baris 2';
             document.getElementById('laporan-nama-sekolah').textContent = settings.namaSekolah || 'Nama Sekolah';
@@ -1415,13 +1373,8 @@
                  document.getElementById('laporan-logo').src = 'https://placehold.co/80x80/38bdf8/ffffff?text=LOGO';
             }
             
-            // Kartu Anggota
-            // Teks "PERPUSTAKAAN" dan "DIGITAL" sudah permanen di HTML.
             document.getElementById('kartu-nama-sekolah').textContent = settings.namaSekolah || 'Nama Sekolah';
-            
-            // PERBAIKAN: Mengaktifkan kembali update alamat sekolah di kartu anggota
             document.getElementById('kartu-alamat-sekolah').textContent = settings.alamatSekolah || 'Alamat Sekolah';
-             
              if (settings.logoBase64) {
                 document.getElementById('kartu-logo').src = settings.logoBase64;
             } else {
@@ -1429,10 +1382,6 @@
             }
         }
         
-        /**
-         * Update form pengaturan dengan data terbaru
-         * @param {object} settings Objek pengaturan
-         */
         function updatePengaturanForm(settings) {
             document.getElementById('pengaturan-instansi-1').value = settings.instansi1 || '';
             document.getElementById('pengaturan-instansi-2').value = settings.instansi2 || '';
@@ -1448,33 +1397,26 @@
 
         // ----- App Initialization -----
         
-        /**
-         * Inisialisasi aplikasi utama (setelah login)
-         */
-        async function initApp() { // Perbaikan: Jadikan async
+        async function initApp() {
             lucide.createIcons();
             initClock();
             initNavigation();
+            initActivityNotificationListener(); // PERBAIKAN: Memanggil listener notifikasi baru
             initModals();
             
-            // Inisialisasi halaman-halaman
             initDashboard();
             initPageKelas();
             initPageBuku();
-            await initPageAnggota(); // Perbaikan: Await inisialisasi anggota
+            await initPageAnggota();
             initPageTransaksi();
             initPageKartuAnggota();
             initPageRiwayat();
             initPageLaporan();
             initPagePengaturan();
             
-            // Tampilkan dashboard sebagai default
             showPage('dashboard');
         }
 
-        /**
-         * Inisialisasi jam dan tanggal real-time
-         */
         function initClock() {
             const dateEl = document.getElementById('current-date');
             const timeEl = document.getElementById('current-time');
@@ -1485,7 +1427,6 @@
                 const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
                 
                 dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
-                // PERBAIKAN: Menambahkan WIB (Waktu Indonesia Barat)
                 timeEl.textContent = now.toLocaleTimeString('id-ID', timeOptions) + ' WIB';
             }
             
@@ -1493,9 +1434,6 @@
             setInterval(updateClock, 1000);
         }
 
-        /**
-         * Inisialisasi navigasi SPA
-         */
         function initNavigation() {
             const navLinks = document.querySelectorAll('.nav-link');
             const pages = document.querySelectorAll('.page-container');
@@ -1503,7 +1441,6 @@
             const transaksiSubmenu = document.getElementById('transaksi-submenu');
             const transaksiChevron = document.getElementById('transaksi-chevron');
             
-            // Kontrol Sidebar Mobile
             const sidebar = document.getElementById('sidebar');
             const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -1521,19 +1458,17 @@
                     sidebarOverlay.classList.add('hidden');
                 });
             }
-            // Akhir Kontrol Sidebar Mobile
 
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const pageId = link.dataset.page;
                     
-                    if (!pageId) return; // Jika ini tombol dropdown
+                    if (!pageId) return;
 
                     showPage(pageId);
                     
-                    // Tutup sidebar setelah klik link di mobile
-                    if (window.innerWidth < 768) { // 768px adalah breakpoint 'md'
+                    if (window.innerWidth < 768) {
                         sidebar.classList.add('-translate-x-full');
                         sidebarOverlay.classList.add('hidden');
                     }
@@ -1547,30 +1482,22 @@
             });
         }
         
-        /**
-         * Fungsi untuk menampilkan halaman dan memuat datanya
-         * @param {string} pageId ID halaman (e.g., 'dashboard', 'buku')
-         */
         function showPage(pageId) {
-            // Sembunyikan semua halaman
             document.querySelectorAll('.page-container').forEach(page => {
                 page.classList.add('hidden');
             });
             
-            // Tampilkan halaman yang diminta
             const activePage = document.getElementById(`page-${pageId}`);
             if (activePage) {
                 activePage.classList.remove('hidden');
             }
             
-            // Set status aktif di sidebar
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach(link => {
                 link.classList.remove('active-nav', 'bg-sky-100', 'text-sky-700', 'font-semibold');
                 if (link.dataset.page === pageId) {
                     link.classList.add('active-nav', 'bg-sky-100', 'text-sky-700', 'font-semibold');
                     
-                    // Buka submenu jika link ada di dalamnya
                     const parentSubmenu = link.closest('#transaksi-submenu');
                     if (parentSubmenu) {
                         parentSubmenu.classList.remove('hidden');
@@ -1580,9 +1507,6 @@
                 }
             });
             
-            // Muat data untuk halaman (jika diperlukan)
-            // Kita akan memuat data menggunakan onSnapshot saat inisialisasi
-            // Jadi tidak perlu memuat ulang di sini, kecuali untuk data yg dinamis
             if (pageId === 'peminjaman') {
                 loadTransaksiDropdowns();
             }
@@ -1596,6 +1520,127 @@
                 loadAnggotaDropdown('riwayat-pilih-anggota', true);
             }
         }
+        
+        // ----- PERBAIKAN: Logika Notifikasi Aktivitas (Sistem Baru) -----
+
+        function initActivityNotificationListener() {
+            // Inisialisasi toggle (pembuka panel)
+            const button = document.getElementById('notification-button');
+            const panel = document.getElementById('notification-panel');
+            const clearLogBtn = document.getElementById('mark-all-read-button');
+            
+            clearLogBtn.textContent = 'Bersihkan Log'; // Ubah teks tombol
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                panel.classList.toggle('hidden');
+            });
+
+            clearLogBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                clearActivityLog();
+                panel.classList.add('hidden'); // Tutup panel
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== button) {
+                    panel.classList.add('hidden');
+                }
+            });
+
+            // Listener untuk koleksi 'aktivitas'
+            const q = query(getCollectionRef('aktivitas'), orderBy('timestamp', 'desc'), limit(20));
+            
+            const unsub = onSnapshot(q, (snapshot) => {
+                globalNotifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateActivityNotificationUI();
+            }, (error) => {
+                console.error("Error listener aktivitas:", error);
+                updateActivityNotificationUI(true); // Tampilkan error
+            });
+            
+            unsubscribeListeners.push(unsub);
+        }
+
+        function updateActivityNotificationUI(isError = false) {
+            const badge = document.getElementById('notification-badge');
+            const list = document.getElementById('notification-list');
+            
+            const count = globalNotifications.length;
+
+            badge.textContent = count;
+            badge.classList.toggle('hidden', count === 0);
+
+            if (isError) {
+                list.innerHTML = '<li class="p-4 text-sm text-red-500 text-center">Gagal memuat aktivitas.</li>';
+                return;
+            }
+
+            if (count === 0) {
+                list.innerHTML = '<li class="p-4 text-sm text-gray-500 text-center">Tidak ada aktivitas terbaru.</li>';
+                return;
+            }
+
+            list.innerHTML = globalNotifications.map(notif => {
+                const icon = notif.icon || 'activity';
+                const time = notif.timestamp ? formatTimeAgo(notif.timestamp) : '';
+                
+                return `
+                    <li class="p-3 border-b border-gray-100 hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 mr-3">
+                                <i data-lucide="${icon}" class="h-4 w-4 text-gray-500"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-800">${notif.message}</p>
+                                <p class="text-xs text-gray-600 truncate">${notif.detail}</p>
+                                <p class="text-xs text-gray-400 mt-1">${time}</p>
+                            </div>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+            
+            lucide.createIcons(); // Penting untuk render ikon lucide
+        }
+
+        async function clearActivityLog() {
+            if (globalNotifications.length === 0) return;
+
+            const batch = writeBatch(db);
+            globalNotifications.forEach(notif => {
+                const docRef = getDocRef('aktivitas', notif.id);
+                batch.delete(docRef);
+            });
+
+            try {
+                await batch.commit();
+                showToast("Log aktivitas dibersihkan.");
+                // Listener onSnapshot akan otomatis memperbarui UI
+            } catch (error) {
+                console.error("Gagal membersihkan log:", error);
+                showToast("Gagal membersihkan log.", "error");
+            }
+        }
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate();
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " tahun lalu";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " bulan lalu";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " hari lalu";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + " jam lalu";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " menit lalu";
+            return "Baru saja";
+        }
+        // ----- Akhir Logika Notifikasi Aktivitas -----
         
         // ----- Modal Handling -----
         
@@ -1625,21 +1670,12 @@
             });
         }
 
-        /**
-         * Menampilkan modal
-         * @param {string} title Judul modal
-         * @param {string} bodyHtml HTML untuk body modal
-         * @param {function} onSave Fungsi callback saat tombol Simpan diklik
-         * @param {string} saveText Teks untuk tombol simpan (default: 'Simpan')
-         * @param {string} saveClass Kelas Tailwind untuk tombol simpan (default: 'bg-sky-500 hover:bg-sky-600')
-         */
         function showModal(title, bodyHtml, onSave, saveText = 'Simpan', saveClass = 'bg-sky-500 hover:bg-sky-600') {
             modalTitle.textContent = title;
             modalBody.innerHTML = bodyHtml;
             onSaveCallback = onSave;
             
             modalSaveButton.textContent = saveText;
-            // Ganti seluruh kelas untuk memastikan warna (merah untuk hapus) diterapkan
             modalSaveButton.className = `${saveClass} text-white px-4 py-2 rounded-lg shadow text-sm font-medium`;
 
             modalContainer.classList.remove('hidden');
@@ -1651,17 +1687,12 @@
             modalBody.innerHTML = '';
             onSaveCallback = null;
             
-            // Kembalikan tombol simpan ke default
             modalSaveButton.textContent = 'Simpan';
             modalSaveButton.className = 'bg-sky-500 text-white px-4 py-2 rounded-lg shadow hover:bg-sky-600 text-sm font-medium';
         }
 
         // ----- Pagination Logic -----
 
-        /**
-         * Inisialisasi state pagination untuk sebuah halaman
-         * @param {string} pageKey Kunci unik untuk halaman (e.g., 'buku')
-         */
         function initPagination(pageKey) {
             paginationState[pageKey] = {
                 currentPage: 1,
@@ -1671,33 +1702,25 @@
                 searchTerm: '',
             };
             
-            // Event listener untuk select rows per page
             const rowsSelect = document.getElementById(`table-rows-${pageKey}`);
             if (rowsSelect) {
                 rowsSelect.addEventListener('change', (e) => {
                     paginationState[pageKey].rowsPerPage = parseInt(e.target.value, 10);
-                    paginationState[pageKey].currentPage = 1; // Reset ke halaman 1
+                    paginationState[pageKey].currentPage = 1;
                     renderPaginatedTable(pageKey);
                 });
             }
             
-             // Event listener untuk search input
             const searchInput = document.getElementById(`search-${pageKey}`);
             if (searchInput) {
                 searchInput.addEventListener('input', (e) => {
                     paginationState[pageKey].searchTerm = e.target.value.toLowerCase();
-                    paginationState[pageKey].currentPage = 1; // Reset ke halaman 1
+                    paginationState[pageKey].currentPage = 1;
                     renderPaginatedTable(pageKey);
                 });
             }
         }
         
-        /**
-         * Render tabel dengan data yang sudah dipaginasi
-         * @param {string} pageKey Kunci halaman
-         * @param {function} filterFn Fungsi untuk memfilter data (opsional)
-         * @param {function} renderFn Fungsi untuk merender HTML tabel
-         */
         function renderPaginatedTable(pageKey, filterFn, renderFn) {
             const state = paginationState[pageKey];
             if (!state) return;
@@ -1705,7 +1728,6 @@
             const tableBody = document.getElementById(`table-body-${pageKey}`);
             if (!tableBody) return;
             
-            // 1. Filter data
             state.filteredData = state.data;
             if (state.searchTerm) {
                  if(filterFn) {
@@ -1713,7 +1735,6 @@
                  }
             }
             
-            // 2. Paginate data
             const totalItems = state.filteredData.length;
             const totalPages = Math.ceil(totalItems / state.rowsPerPage);
             state.currentPage = Math.max(1, Math.min(state.currentPage, totalPages || 1));
@@ -1722,22 +1743,13 @@
             const end = start + state.rowsPerPage;
             const paginatedData = state.filteredData.slice(start, end);
 
-            // 3. Render data ke tabel
             if (renderFn) {
                 tableBody.innerHTML = renderFn(paginatedData);
             }
             
-            // 4. Render kontrol pagination
             renderPaginationControls(pageKey, totalItems, totalPages, start);
         }
         
-        /**
-         * Render kontrol pagination (info & tombol)
-         * @param {string} pageKey Kunci halaman
-         * @param {number} totalItems Jumlah total item (setelah filter)
-         * @param {number} totalPages Jumlah total halaman
-         * @param {number} start Indeks item awal
-         */
         function renderPaginationControls(pageKey, totalItems, totalPages, start) {
             const paginationContainer = document.getElementById(`pagination-${pageKey}`);
             if (!paginationContainer) return;
@@ -1767,7 +1779,6 @@
             `;
             lucide.createIcons();
             
-            // Add event listeners to new buttons
             paginationContainer.querySelectorAll('.pagination-prev, .pagination-next').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const key = e.currentTarget.dataset.pagekey;
@@ -1777,12 +1788,10 @@
                     } else if (action === 'next') {
                         paginationState[key].currentPage++;
                     }
-                    // Trigger re-render
                     const searchInput = document.getElementById(`search-${key}`);
                     if(searchInput) {
-                        searchInput.dispatchEvent(new Event('input')); // Cara mudah trigger re-render
+                        searchInput.dispatchEvent(new Event('input'));
                     } else {
-                        // Jika tidak ada search, panggil manual
                         const pageConfig = pageConfigurations[key];
                         if(pageConfig) {
                              renderPaginatedTable(key, pageConfig.filterFn, pageConfig.renderFn);
@@ -1793,7 +1802,6 @@
         }
         
         // ----- Page Configurations for Pagination -----
-        // Menyimpan fungsi spesifik untuk tiap halaman
         
         const pageConfigurations = {
             'dashboard': {
@@ -1812,7 +1820,7 @@
                         </tr>
                     `).join('');
                 },
-                filterFn: null // Dashboard tidak ada filter
+                filterFn: null
             },
             'buku': {
                 renderFn: (data) => {
@@ -1877,42 +1885,44 @@
                         </tr>
                     `).join('');
                 },
-                filterFn: null // Filter riwayat ditangani oleh dropdown
+                filterFn: null
             }
         };
 
         // ----- Firestore Collection References -----
         
-        // PERBAIKAN: Mengubah semua referensi untuk menggunakan path 'private' berdasarkan userId
-        
-        /**
-         * Mendapatkan referensi koleksi private milik pengguna
-         * @param {string} collectionName Nama koleksi
-         * @returns {import("firebase/firestore").CollectionReference} Referensi koleksi
-         */
         const getCollectionRef = (collectionName) => {
-            // PERBAIKAN: Menggunakan userId untuk path koleksi
             if (!userId) {
                 console.error("User ID tidak ditemukan saat mencoba mengakses koleksi:", collectionName);
                 throw new Error("User ID tidak ditemukan. Tidak dapat mengakses koleksi.");
             }
+            // PERBAIKAN: Semua data sekarang private per user
             return collection(db, `artifacts/${appId}/users/${userId}/${collectionName}`);
         };
         
-        /**
-         * Mendapatkan referensi dokumen private milik pengguna
-         * @param {string} collectionName Nama koleksi
-         * @param {string} docId ID dokumen
-         * @returns {import("firebase/firestore").DocumentReference} Referensi dokumen
-         */
         const getDocRef = (collectionName, docId) => {
-            // PERBAIKAN: Menggunakan userId untuk path dokumen
             if (!userId) {
                 console.error("User ID tidak ditemukan saat mencoba mengakses dokumen:", collectionName, docId);
                 throw new Error("User ID tidak ditemukan. Tidak dapat mengakses dokumen.");
             }
+            // PERBAIKAN: Semua data sekarang private per user
             return doc(db, `artifacts/${appId}/users/${userId}/${collectionName}`, docId);
         };
+
+        // ----- PERBAIKAN BARU: Log Aktivitas -----
+        async function logActivity(icon, message, detail = '') {
+            try {
+                await addDoc(getCollectionRef('aktivitas'), {
+                    icon: icon, // lucide icon name
+                    message: message,
+                    detail: detail,
+                    timestamp: serverTimestamp()
+                });
+            } catch (error) {
+                console.warn("Gagal mencatat aktivitas:", error);
+            }
+        }
+        // ----- Akhir PERBAIKAN BARU -----
 
         // ----- Page: Dashboard -----
         
@@ -1920,24 +1930,21 @@
             initPagination('dashboard');
             initActivityChart();
             
-            // Stats Listeners
             const unsubBuku = onSnapshot(getCollectionRef('buku'), (snapshot) => {
-                // PERBAIKAN: Hitung total stok buku, bukan jumlah dokumen
                 globalTotalStok = snapshot.docs.reduce((acc, doc) => acc + (doc.data().jumlah || 0), 0);
-                updateStatTotalBuku(); // Panggil fungsi update
-            }, (error) => console.error("Error listener buku:", error)); // Tambah penanganan error
+                updateStatTotalBuku();
+            }, (error) => console.error("Error listener buku:", error));
             
             const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
                 document.getElementById('stat-total-anggota').textContent = snapshot.size;
                 document.getElementById('stat-total-siswa-page').textContent = snapshot.size;
-            }, (error) => console.error("Error listener anggota:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener anggota:", error));
             
             const unsubKelas = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
                 document.getElementById('stat-total-kelas').textContent = snapshot.size;
                  document.getElementById('stat-total-kelas-page').textContent = snapshot.size;
-            }, (error) => console.error("Error listener kelas:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener kelas:", error));
             
-            // Transaksi Listener (untuk beberapa stat)
             const unsubTransaksi = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
                 let dipinjamCount = 0;
                 let terlambatList = [];
@@ -1945,10 +1952,8 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                // FIX: Ubah cara mapping data untuk menyertakan 'tanggal'
                 const rawData = snapshot.docs.map(doc => {
                     const data = doc.data();
-                    // Tentukan tanggal aktivitas
                     let activityDate = null;
                     if (data.status === 'dikembalikan' && data.tglKembaliReal) {
                         activityDate = data.tglKembaliReal;
@@ -1958,53 +1963,45 @@
                     return { ...data, id: doc.id, tanggal: activityDate };
                 });
                 
-                // Urutkan berdasarkan tanggal (terbaru dulu)
-                // FIX: Urutkan menggunakan field 'tanggal' yang baru dibuat
                 rawData.sort((a, b) => (b.tanggal ? b.tanggal.toMillis() : 0) - (a.tanggal ? a.tanggal.toMillis() : 0));
                 
                 paginationState['dashboard'].data = rawData;
                 renderPaginatedTable('dashboard', pageConfigurations['dashboard'].filterFn, pageConfigurations['dashboard'].renderFn);
                 lucide.createIcons();
                 
-                // --- PERBAIKAN GRAFIK: LOGIKA PEMROSESAN DATA ---
                 if (dashboardChartInstance) {
                     const sevenDaysAgo = new Date(today);
-                    sevenDaysAgo.setDate(today.getDate() - 6); // Data untuk 7 hari (today + 6 past days)
+                    sevenDaysAgo.setDate(today.getDate() - 6);
 
-                    // Inisialisasi data 7 hari (0=Minggu, 1=Senin, ..., 6=Sabtu)
                     let peminjamanData = [0, 0, 0, 0, 0, 0, 0];
                     let pengembalianData = [0, 0, 0, 0, 0, 0, 0];
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         
-                        // Cek Peminjaman
                         if (data.tglPinjam) {
                             const tglPinjam = data.tglPinjam.toDate();
-                            if (tglPinjam >= sevenDaysAgo && tglPinjam <= new Date()) { // Cek rentang 7 hari
-                                const dayOfWeek = tglPinjam.getDay(); // 0-6
+                            if (tglPinjam >= sevenDaysAgo && tglPinjam <= new Date()) {
+                                const dayOfWeek = tglPinjam.getDay();
                                 peminjamanData[dayOfWeek]++;
                             }
                         }
                         
-                        // Cek Pengembalian
                         if (data.tglKembaliReal) {
                             const tglKembali = data.tglKembaliReal.toDate();
-                            if (tglKembali >= sevenDaysAgo && tglKembali <= new Date()) { // Cek rentang 7 hari
-                                const dayOfWeek = tglKembali.getDay(); // 0-6
+                            if (tglKembali >= sevenDaysAgo && tglKembali <= new Date()) {
+                                const dayOfWeek = tglKembali.getDay();
                                 pengembalianData[dayOfWeek]++;
                             }
                         }
                     });
 
-                    // Update data grafik
                     dashboardChartInstance.data.datasets[0].data = peminjamanData;
                     dashboardChartInstance.data.datasets[1].data = pengembalianData;
                     dashboardChartInstance.update();
                 }
-                // --- AKHIR PERBAIKAN GRAFIK ---
 
-                // Proses Notifikasi & Stats (Logika ini sudah ada sebelumnya dan sudah benar)
+                // Proses Notifikasi & Stats
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const tglPinjam = data.tglPinjam ? data.tglPinjam.toDate() : null;
@@ -2013,54 +2010,50 @@
                     
                     if (data.status === 'dipinjam') {
                         dipinjamCount++;
-                        // Cek terlambat (Logika ini sudah benar)
+                        // Cek terlambat (HANYA UNTUK KARTU DASHBOARD)
                         if (tglKembaliEstimasi && tglKembaliEstimasi < today) {
                             terlambatList.push(`<li>${data.namaAnggota} - ${data.judulBuku}</li>`);
                         }
                     }
                     
-                    // Cek aktivitas hari ini
                     if ((tglPinjam && tglPinjam >= today) || (tglKembaliReal && tglKembaliReal >= today)) {
-                         // PERBAIKAN: Mengubah format string notifikasi aktivitas hari ini
                          hariIniList.push(`<li>${data.judulBuku} (${data.status}) - ${data.namaAnggota}</li>`);
                     }
                 });
 
-                // PERBAIKAN: Update variabel global dan panggil fungsi update
                 globalBukuDipinjam = dipinjamCount;
-                document.getElementById('stat-buku-dipinjam').textContent = dipinjamCount; // Ini sudah ada
-                updateStatTotalBuku(); // Panggil fungsi update
+                document.getElementById('stat-buku-dipinjam').textContent = dipinjamCount;
+                updateStatTotalBuku();
                 
                 const noticeTerlambat = document.getElementById('notice-terlambat');
                 noticeTerlambat.innerHTML = terlambatList.length > 0 ? terlambatList.join('') : '<li class="text-gray-500">Tidak ada buku terlambat.</li>';
                 
                 const noticeHariIni = document.getElementById('notice-hari-ini');
                 noticeHariIni.innerHTML = hariIniList.length > 0 ? hariIniList.join('') : '<li class="text-gray-500">Tidak ada aktifitas.</li>';
-            }, (error) => console.error("Error listener transaksi:", error)); // Tambah penanganan error
+                
+            }, (error) => console.error("Error listener transaksi:", error));
 
             unsubscribeListeners.push(unsubBuku, unsubAnggota, unsubKelas, unsubTransaksi);
         }
 
-        // --- PERBAIKAN GRAFIK: Ubah fungsi inisialisasi ---
         function initActivityChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
             
-            // PERBAIKAN: Ubah label hari (0=Minggu, 6=Sabtu)
             const data = {
                 labels: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
                 datasets: [
                     {
                         label: 'Peminjaman',
-                        data: [0, 0, 0, 0, 0, 0, 0], // Mulai dengan data kosong
-                        borderColor: 'rgb(59, 130, 246)', // blue-500
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: 'rgb(59, 130, 246)',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         fill: true,
                         tension: 0.4
                     },
                     {
                         label: 'Pengembalian',
-                        data: [0, 0, 0, 0, 0, 0, 0], // Mulai dengan data kosong
-                        borderColor: 'rgb(16, 185, 129)', // emerald-500
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: 'rgb(16, 185, 129)',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         fill: true,
                         tension: 0.4
@@ -2068,7 +2061,6 @@
                 ]
             };
             
-            // PERBAIKAN: Simpan instance grafik ke variabel global
             dashboardChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: data,
@@ -2083,12 +2075,10 @@
                 }
             });
         }
-        // --- AKHIR PERBAIKAN GRAFIK ---
         
         // ----- Page: Kelas -----
 
         function initPageKelas() {
-            // Listener untuk data kelas
             const unsubKelas = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
                 const tableBody = document.getElementById('table-body-kelas');
                 if (snapshot.empty) {
@@ -2096,7 +2086,6 @@
                     return;
                 }
                 
-                // Muat data siswa untuk menghitung jumlah
                 getDocs(getCollectionRef('anggota')).then(anggotaSnapshot => {
                     const siswaPerKelas = {};
                     anggotaSnapshot.forEach(doc => {
@@ -2116,23 +2105,21 @@
                                 <td class="px-6 py-4">${siswaPerKelas[id] || 0}</td>
                                 <td class="px-6 py-4">
                                     <button class="btn-edit-kelas p-1 text-blue-600 hover:text-blue-800" data-id="${id}" data-nama="${data.namaKelas}" data-wali="${data.waliKelas}"><i data-lucide="edit-2" class="h-4 w-4"></i></button>
-                                    <button class="btn-delete-kelas p-1 text-red-600 hover:text-red-800" data-id="${id}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                                    <button class="btn-delete-kelas p-1 text-red-600 hover:text-red-800" data-id="${id}" data-nama="${data.namaKelas}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
                                 </td>
                             </tr>
                         `;
                     }).join('');
                     lucide.createIcons();
                 });
-            }, (error) => console.error("Error listener page kelas:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener page kelas:", error));
             
             unsubscribeListeners.push(unsubKelas);
             
-            // Event listener untuk tombol Tambah
             document.getElementById('add-kelas-button').addEventListener('click', () => {
                 showModalAddKelas();
             });
             
-            // Event listener untuk Edit dan Hapus (delegasi)
             document.getElementById('table-body-kelas').addEventListener('click', (e) => {
                 const editBtn = e.target.closest('.btn-edit-kelas');
                 const deleteBtn = e.target.closest('.btn-delete-kelas');
@@ -2146,16 +2133,16 @@
                 
                 if (deleteBtn) {
                     const id = deleteBtn.dataset.id;
-                    const nama = deleteBtn.closest('tr').querySelector('td:first-child').textContent; // Ambil nama dari sel pertama
+                    const nama = deleteBtn.dataset.nama;
                     showModal(
                         'Konfirmasi Hapus',
                         `<p>Apakah Anda yakin ingin menghapus kelas <strong>${nama}</strong>?</p>`,
                         () => {
-                            deleteKelas(id);
-                            hideModal(); // Tutup modal setelah hapus
+                            deleteKelas(id, nama); // Kirim nama untuk log
+                            hideModal();
                         },
-                        'Hapus', // Teks tombol
-                        'bg-red-600 hover:bg-red-700' // Kelas tombol merah
+                        'Hapus',
+                        'bg-red-600 hover:bg-red-700'
                     );
                 }
             });
@@ -2187,7 +2174,9 @@
                 }
                 
                 try {
-                    await addDoc(getCollectionRef('kelas'), { namaKelas, waliKelas });
+                    const data = { namaKelas, waliKelas };
+                    await addDoc(getCollectionRef('kelas'), data);
+                    await logActivity('school-2', 'Kelas ditambahkan', data.namaKelas); // Log
                     showToast("Kelas berhasil ditambahkan.");
                     hideModal();
                 } catch (e) {
@@ -2208,7 +2197,9 @@
                 }
                 
                 try {
-                    await updateDoc(getDocRef('kelas', id), { namaKelas, waliKelas });
+                    const data = { namaKelas, waliKelas };
+                    await updateDoc(getDocRef('kelas', id), data);
+                    await logActivity('file-edit', 'Kelas diperbarui', data.namaKelas); // Log
                     showToast("Kelas berhasil diperbarui.");
                     hideModal();
                 } catch (e) {
@@ -2218,9 +2209,10 @@
             });
         }
         
-        async function deleteKelas(id) {
+        async function deleteKelas(id, nama) {
             try {
                 await deleteDoc(getDocRef('kelas', id));
+                await logActivity('trash-2', 'Kelas dihapus', nama); // Log
                 showToast("Kelas berhasil dihapus.");
             } catch (e) {
                 console.error("Error deleting document: ", e);
@@ -2237,7 +2229,7 @@
                 paginationState['buku'].data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
                 renderPaginatedTable('buku', pageConfigurations['buku'].filterFn, pageConfigurations['buku'].renderFn);
                 lucide.createIcons();
-            }, (error) => console.error("Error listener page buku:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener page buku:", error));
             
             unsubscribeListeners.push(unsubBuku);
             
@@ -2257,12 +2249,12 @@
                 
                 if (deleteBtn) {
                     const id = deleteBtn.dataset.id;
-                    const nama = deleteBtn.closest('tr').querySelector('td:first-child').textContent; // Ambil nama dari sel pertama
+                    const nama = deleteBtn.closest('tr').querySelector('td:first-child').textContent;
                     showModal(
                         'Konfirmasi Hapus',
                         `<p>Apakah Anda yakin ingin menghapus buku <strong>${nama}</strong>?</p>`,
                         () => {
-                            deleteBuku(id);
+                            deleteBuku(id, nama); // Kirim nama untuk log
                             hideModal();
                         },
                         'Hapus',
@@ -2323,6 +2315,7 @@
                 
                 try {
                     await addDoc(getCollectionRef('buku'), data);
+                    await logActivity('book-open', 'Buku ditambahkan', data.judul); // Log
                     showToast("Buku berhasil ditambahkan.");
                     hideModal();
                 } catch (e) {
@@ -2350,6 +2343,7 @@
                 
                 try {
                     await updateDoc(getDocRef('buku', buku.id), data);
+                    await logActivity('file-edit', 'Buku diperbarui', data.judul); // Log
                     showToast("Buku berhasil diperbarui.");
                     hideModal();
                 } catch (e) {
@@ -2359,9 +2353,10 @@
             });
         }
         
-        async function deleteBuku(id) {
+        async function deleteBuku(id, nama) {
             try {
                 await deleteDoc(getDocRef('buku', id));
+                await logActivity('trash-2', 'Buku dihapus', nama); // Log
                 showToast("Buku berhasil dihapus.");
             } catch (e) {
                 console.error("Error deleting document: ", e);
@@ -2371,11 +2366,9 @@
         
         // ----- Page: Data Anggota -----
 
-        let daftarKelasCache = []; // Cache untuk data kelas
+        let daftarKelasCache = [];
         
         async function getDaftarKelas() {
-            // Selalu ambil data terbaru jika cache kosong atau lebih dari 1 menit
-            // Untuk aplikasi multi-user yang datanya terisolasi, cache sederhana sudah cukup
             if(daftarKelasCache.length > 0) {
                 return daftarKelasCache;
             }
@@ -2385,24 +2378,14 @@
                 return daftarKelasCache;
             } catch (error) {
                 console.error("Gagal mengambil daftar kelas:", error);
-                return []; // Kembalikan array kosong jika gagal
+                return [];
             }
         }
         
-        async function initPageAnggota() { // Perbaikan: Jadikan async
-            // Perbaikan: Pre-fill cache kelas sebelum listener anggota diatur
-            try {
-                // await getDaftarKelas(); // Panggil untuk mengisi cache
-                // Perbaikan: Tidak perlu panggil di sini, listener di bawah akan mengisinya
-            } catch (err) {
-                console.error("Gagal memuat cache kelas:", err);
-            }
-
-            // Listener untuk update cache kelas (PINDAH KE SINI)
+        async function initPageAnggota() {
             const unsubKelasCache = onSnapshot(getCollectionRef('kelas'), (snapshot) => {
                 daftarKelasCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Perbaikan: Re-render tabel anggota jika data sudah ada saat cache kelas diupdate
                 if (paginationState['anggota'] && paginationState['anggota'].data.length > 0) {
                     paginationState['anggota'].data = paginationState['anggota'].data.map(anggota => {
                         const kelas = daftarKelasCache.find(k => k.id === anggota.kelasId);
@@ -2410,23 +2393,23 @@
                         return anggota;
                     });
                     renderPaginatedTable('anggota', pageConfigurations['anggota'].filterFn, pageConfigurations['anggota'].renderFn);
-                    lucide.createIcons(); // Re-render ikon
+                    lucide.createIcons();
                 }
-            }, (error) => console.error("Error listener cache kelas:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener cache kelas:", error));
             
-            unsubscribeListeners.push(unsubKelasCache); // Tambahkan ke listener untuk auto-cleanup saat logout
+            unsubscribeListeners.push(unsubKelasCache);
 
             initPagination('anggota');
             
             const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
                 paginationState['anggota'].data = snapshot.docs.map(doc => {
                     const data = doc.data();
-                    const kelas = daftarKelasCache.find(k => k.id === data.kelasId); // Cache seharusnya sudah terisi
+                    const kelas = daftarKelasCache.find(k => k.id === data.kelasId);
                     return { ...data, id: doc.id, namaKelas: kelas ? kelas.namaKelas : 'N/A' };
                 });
                 renderPaginatedTable('anggota', pageConfigurations['anggota'].filterFn, pageConfigurations['anggota'].renderFn);
                 lucide.createIcons();
-            }, (error) => console.error("Error listener page anggota:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener page anggota:", error));
             
             unsubscribeListeners.push(unsubAnggota);
             
@@ -2446,12 +2429,12 @@
                 
                 if (deleteBtn) {
                     const id = deleteBtn.dataset.id;
-                    const nama = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent; // Ambil nama dari sel kedua
+                    const nama = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent;
                     showModal(
                         'Konfirmasi Hapus',
                         `<p>Apakah Anda yakin ingin menghapus anggota <strong>${nama}</strong>?</p>`,
                         () => {
-                            deleteAnggota(id);
+                            deleteAnggota(id, nama); // Kirim nama untuk log
                             hideModal();
                         },
                         'Hapus',
@@ -2520,6 +2503,7 @@
                 
                 try {
                     await addDoc(getCollectionRef('anggota'), data);
+                    await logActivity('user-plus', 'Anggota ditambahkan', data.namaLengkap); // Log
                     showToast("Anggota berhasil ditambahkan.");
                     hideModal();
                 } catch (e) {
@@ -2549,6 +2533,7 @@
                 
                 try {
                     await updateDoc(getDocRef('anggota', anggota.id), data);
+                    await logActivity('file-edit', 'Anggota diperbarui', data.namaLengkap); // Log
                     showToast("Anggota berhasil diperbarui.");
                     hideModal();
                 } catch (e) {
@@ -2558,9 +2543,10 @@
             });
         }
         
-        async function deleteAnggota(id) {
+        async function deleteAnggota(id, nama) {
             try {
                 await deleteDoc(getDocRef('anggota', id));
+                await logActivity('user-minus', 'Anggota dihapus', nama); // Log
                 showToast("Anggota berhasil dihapus.");
             } catch (e) {
                 console.error("Error deleting document: ", e);
@@ -2575,27 +2561,23 @@
         let daftarPinjamCache = [];
         
         function initPageTransaksi() {
-            // Listener untuk cache anggota
             const unsubAnggota = onSnapshot(getCollectionRef('anggota'), (snapshot) => {
                 daftarAnggotaCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }, (error) => console.error("Error listener cache anggota (transaksi):", error));
             
-            // Listener untuk cache buku
             const unsubBuku = onSnapshot(getCollectionRef('buku'), (snapshot) => {
                 daftarBukuCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             }, (error) => console.error("Error listener cache buku (transaksi):", error));
             
-            // Listener untuk tabel buku dipinjam & dropdown pengembalian
             const qDipinjam = query(getCollectionRef('transaksi'), where('status', '==', 'dipinjam'));
             const unsubPinjam = onSnapshot(qDipinjam, (snapshot) => {
                 daftarPinjamCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderTabelDipinjam(daftarPinjamCache);
-                loadPengembalianDropdown(daftarPinjamCache); // Update dropdown jika halaman aktif
+                loadPengembalianDropdown(daftarPinjamCache);
             }, (error) => console.error("Error listener buku dipinjam (transaksi):", error));
             
             unsubscribeListeners.push(unsubAnggota, unsubBuku, unsubPinjam);
             
-            // Form Peminjaman
             document.getElementById('pinjam-tgl-pinjam').value = getTodayDateString();
             document.getElementById('pinjam-tgl-kembali').value = getNextWeekDateString();
             
@@ -2613,7 +2595,8 @@
                     judulBuku: bukuEl.options[bukuEl.selectedIndex].text,
                     tglPinjam: dateInputToTimestamp(document.getElementById('pinjam-tgl-pinjam').value),
                     tglKembaliEstimasi: dateInputToTimestamp(document.getElementById('pinjam-tgl-kembali').value),
-                    status: 'dipinjam' // dipinjam, dikembalikan, terlambat
+                    status: 'dipinjam',
+                    notif_read: false // Field notif terlambat (dibiarkan, tidak apa-apa)
                 };
                 
                 if (!data.anggotaId || !data.bukuId || !data.tglKembaliEstimasi) {
@@ -2623,17 +2606,17 @@
                 
                 try {
                     await addDoc(getCollectionRef('transaksi'), data);
+                    await logActivity('arrow-right', 'Buku dipinjam', `${data.namaAnggota} - ${data.judulBuku}`); // Log
                     showToast("Peminjaman berhasil disimpan.");
-                    e.target.reset(); // Reset form
+                    e.target.reset();
                     document.getElementById('pinjam-tgl-pinjam').value = getTodayDateString();
                     document.getElementById('pinjam-tgl-kembali').value = getNextWeekDateString();
                 } catch (error) {
-                    console.error("Error adding document: ", error); // Ganti e menjadi error
+                    console.error("Error adding document: ", error);
                     showToast("Gagal menyimpan peminjaman.", "error");
                 }
             });
             
-            // Form Pengembalian
             document.getElementById('kembali-tgl-real').value = getTodayDateString();
             
             document.getElementById('kembali-transaksi').addEventListener('change', (e) => {
@@ -2665,10 +2648,17 @@
                 }
                 
                 try {
+                    // Dapatkan detail sebelum update
+                    const trx = daftarPinjamCache.find(t => t.id === transaksiId);
+                    const detail = trx ? `${trx.namaAnggota} - ${trx.judulBuku}` : `ID: ${transaksiId}`;
+                    
                     await updateDoc(getDocRef('transaksi', transaksiId), {
                         status: 'dikembalikan',
                         tglKembaliReal: dateInputToTimestamp(tglKembaliReal)
                     });
+                    
+                    await logActivity('arrow-left', 'Buku dikembalikan', detail); // Log
+                    
                     showToast("Pengembalian buku berhasil disimpan.");
                     e.target.reset();
                     document.getElementById('kembali-tgl-real').value = getTodayDateString();
@@ -2681,12 +2671,10 @@
         }
         
         function loadTransaksiDropdowns() {
-            // Load Anggota
             const anggotaSelect = document.getElementById('pinjam-anggota');
             anggotaSelect.innerHTML = '<option value="">Pilih Anggota</option>' + 
                 daftarAnggotaCache.map(a => `<option value="${a.id}">${a.namaLengkap} (${a.nisn})</option>`).join('');
                 
-            // Load Buku
             const bukuSelect = document.getElementById('pinjam-buku');
             bukuSelect.innerHTML = '<option value="">Pilih Buku</option>' +
                 daftarBukuCache.map(b => `<option value="${b.id}">${b.judul} (${b.kodeBuku || 'N/A'})</option>`).join('');
@@ -2713,12 +2701,10 @@
             `).join('');
             lucide.createIcons();
             
-            // Event listener untuk tombol force return
             tableBody.querySelectorAll('.btn-force-return').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = e.currentTarget.dataset.id;
                     document.getElementById('kembali-transaksi').value = id;
-                    // Trigger change event
                     document.getElementById('kembali-transaksi').dispatchEvent(new Event('change'));
                     showPage('pengembalian');
                 });
@@ -2737,7 +2723,6 @@
         // ----- Page: Kartu Anggota -----
         
         function initPageKartuAnggota() {
-            // Load dropdown saat halaman diinisialisasi
             loadAnggotaDropdown('kartu-pilih-anggota');
             
             document.getElementById('kartu-pilih-anggota').addEventListener('change', (e) => {
@@ -2761,69 +2746,57 @@
             });
             
             document.getElementById('kartu-print-button').addEventListener('click', () => {
-                // PERBAIKAN: Ubah logika cetak untuk mengatasi pop-up blocker di device
                 const cardElement = document.getElementById('kartu-anggota-preview');
                 const cardId = document.getElementById('kartu-nisn').textContent || 'kartu';
                 
-                // Jika tidak ada anggota dipilih, jangan cetak
                 if (cardId === '-') {
                     showToast("Pilih anggota terlebih dahulu.", "error");
                     return;
                 }
 
-                // 1. Buka jendela SEGERA (sinkron) untuk menghindari pop-up blocker
+                // 1. Buka jendela SEGERA (sinkron)
                 const printWindow = window.open('', '_blank', 'height=600,width=800');
                 
-                // 2. Cek apakah pop-up diblokir
                 if (!printWindow) {
                     showToast("Gagal membuka jendela cetak. Izinkan pop-up.", "error");
                     return;
                 }
                 
-                // Tampilkan pesan loading di jendela baru
                 printWindow.document.write('<html><head><title>Mencetak...</title></head><body><p>Harap tunggu, sedang memproses kartu...</p></body></html>');
 
-                // 3. Jalankan html2canvas (asinkron)
-                html2canvas(cardElement, { scale: 3 }) // Skala 3x untuk resolusi cetak tinggi
+                // 2. Jalankan html2canvas (asinkron)
+                html2canvas(cardElement, { scale: 3 })
                     .then(canvas => {
-                        const imageData = canvas.toDataURL('image/png'); // Gunakan PNG untuk kualitas
+                        const imageData = canvas.toDataURL('image/png');
                         
-                        // 4. Tulis konten ke jendela yang SUDAH DIBUKA
-                        printWindow.document.open(); // Hapus konten "loading"
+                        // 3. Tulis konten ke jendela yang SUDAH DIBUKA
+                        printWindow.document.open();
                         printWindow.document.write(`
                             <html>
                             <head>
                                 <title>Cetak Kartu - ${cardId}</title>
                                 <style>
-                                    /* Atur halaman untuk printer */
                                     @page {
-                                        size: landscape; /* Orientasi landscape */
-                                        margin: 0.5cm;   /* Beri margin aman */
+                                        size: landscape;
+                                        margin: 0.5cm;
                                     }
-                                    body {
-                                        margin: 0;
-                                        padding: 0;
-                                    }
+                                    body { margin: 0; padding: 0; }
                                     img {
-                                        /* Paksa ukuran fisik kartu (standar CR80) */
                                         width: 8.56cm !important;
                                         height: 5.398cm !important;
                                         box-shadow: none;
-                                        page-break-inside: avoid; /* Jangan pecah gambar */
+                                        page-break-inside: avoid;
                                     }
                                 </style>
                             </head>
                             <body>
-                                <!-- Tampilkan gambar hasil 'foto' kartu -->
                                 <img src="${imageData}" />
-                                
                                 <script>
-                                    // Panggil print dialog setelah gambar dimuat
                                     window.onload = function() {
                                         window.print();
-                                        window.close(); // Tutup jendela setelah dialog print
+                                        window.close();
                                     };
-                                <\/script> <!-- Escaping /script tag -->
+                                <\/script>
                             </body>
                             </html>
                         `);
@@ -2832,9 +2805,8 @@
                     }).catch(err => {
                         console.error("html2canvas error:", err);
                         showToast("Gagal memproses kartu untuk dicetak.", "error");
-                        printWindow.close(); // Tutup jendela loading jika gagal
+                        printWindow.close();
                     });
-                // --- AKHIR PERBAIKAN POP-UP ---
             });
         }
         
@@ -2842,7 +2814,6 @@
             const select = document.getElementById(selectId);
             if (!select) return;
             
-            // Gunakan cache jika ada, jika tidak, muat ulang
             let anggota = daftarAnggotaCache;
             if (anggota.length === 0) {
                 try {
@@ -2851,7 +2822,7 @@
                     daftarAnggotaCache = anggota;
                 } catch (error) {
                     console.error("Gagal memuat dropdown anggota:", error);
-                    anggota = []; // Set ke array kosong jika gagal
+                    anggota = [];
                 }
             }
             
@@ -2866,31 +2837,28 @@
                 anggota = daftarAnggotaCache.find(a => a.id === anggotaId);
             }
             
-            const nisn = anggota?.nisn || ''; // Simpan NISN
+            const nisn = anggota?.nisn || '';
             
             document.getElementById('kartu-nama').textContent = anggota?.namaLengkap || '-';
             document.getElementById('kartu-nisn').textContent = nisn;
             document.getElementById('kartu-kelas').textContent = anggota?.namaKelas || '-';
             
-            // PERBAIKAN: Generate QR Code
             const qrCanvas = document.getElementById('kartu-qr-canvas');
             if (nisn && typeof QRious === 'function') {
                 try {
                     new QRious({
                         element: qrCanvas,
                         value: nisn,
-                        size: 80, // Sesuaikan dengan w-20 h-20 (80px)
-                        level: 'H' // Error correction
+                        size: 80,
+                        level: 'H'
                     });
                     qrCanvas.classList.remove('hidden');
                 } catch (e) {
                     console.error("Gagal generate QR code:", e);
-                    qrCanvas.classList.add('hidden'); // Sembunyikan jika error
+                    qrCanvas.classList.add('hidden');
                 }
             } else {
-                // Sembunyikan dan bersihkan jika tidak ada NISN
                 if (qrCanvas) {
-                    // Cek jika canvas ada sebelum membersihkan
                     const ctx = qrCanvas.getContext('2d');
                     if(ctx) {
                         ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
@@ -2898,8 +2866,6 @@
                     qrCanvas.classList.add('hidden');
                 }
             }
-            
-            // Logic untuk foto bisa ditambahkan di sini jika ada field foto
         }
         
         // ----- Page: Riwayat Peminjaman -----
@@ -2911,11 +2877,10 @@
             
             const unsubRiwayat = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
                 semuaRiwayatCache = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                semuaRiwayatCache.sort((a, b) => (b.tglPinjam || b.tglKembaliReal) - (a.tglPinjam || a.tglKembaliReal)); // Sort terbaru dulu
+                semuaRiwayatCache.sort((a, b) => (b.tglPinjam || b.tglKembaliReal) - (a.tglPinjam || a.tglKembaliReal));
                 
-                // Render tabel dengan filter "semua"
                 filterRiwayatTabel('semua');
-            }, (error) => console.error("Error listener page riwayat:", error)); // Tambah penanganan error
+            }, (error) => console.error("Error listener page riwayat:", error));
             
             unsubscribeListeners.push(unsubRiwayat);
             
@@ -2931,7 +2896,7 @@
             }
             
             paginationState['riwayat'].data = data;
-            paginationState['riwayat'].currentPage = 1; // Reset halaman
+            paginationState['riwayat'].currentPage = 1;
             renderPaginatedTable('riwayat', null, pageConfigurations['riwayat'].renderFn);
             lucide.createIcons();
         }
@@ -2941,11 +2906,10 @@
         let laporanDataCache = [];
         
         function initPageLaporan() {
-            // Muat data laporan sekali saat init
             const unsubLaporan = onSnapshot(getCollectionRef('transaksi'), (snapshot) => {
                 laporanDataCache = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                renderLaporanTabel(laporanDataCache); // Tampilkan semua data awal
-            }, (error) => console.error("Error listener page laporan:", error)); // Tambah penanganan error
+                renderLaporanTabel(laporanDataCache);
+            }, (error) => console.error("Error listener page laporan:", error));
             
             unsubscribeListeners.push(unsubLaporan);
             
@@ -2960,7 +2924,6 @@
                     filteredData = filteredData.filter(trx => (trx.tglPinjam || trx.tglKembaliReal) >= mulaiTs);
                 }
                 if (tglAkhir) {
-                    // Tambah 1 hari ke tglAkhir untuk inklusif
                     let akhirDate = new Date(tglAkhir);
                     akhirDate.setDate(akhirDate.getDate() + 1);
                     const akhirTs = Timestamp.fromDate(akhirDate);
@@ -2968,9 +2931,7 @@
                 }
                 
                 renderLaporanTabel(filteredData);
-                
-                // Update periode
-                 document.getElementById('laporan-periode').textContent = `${tglMulai || '?'} s/d ${tglAkhir || '?'}`;
+                document.getElementById('laporan-periode').textContent = `${tglMulai || '?'} s/d ${tglAkhir || '?'}`;
             });
             
             document.getElementById('laporan-reset-button').addEventListener('click', () => {
@@ -3012,9 +2973,6 @@
         // ----- Page: Pengaturan -----
         
         function initPagePengaturan() {
-            // Data sudah dimuat oleh loadGlobalSettings()
-            
-            // Handle image upload to base64
             document.getElementById('pengaturan-logo-upload').addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -3028,7 +2986,6 @@
                 reader.readAsDataURL(file);
             });
             
-            // Handle form save
             document.getElementById('form-pengaturan').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -3042,13 +2999,75 @@
                 
                 try {
                     await setDoc(getSettingsRef(), data, { merge: true });
+                    await logActivity('settings', 'Pengaturan disimpan', data.namaSekolah); // Log
                     showToast("Pengaturan berhasil disimpan.");
-                    // UI akan terupdate otomatis oleh onSnapshot
                 } catch (error) {
                     console.error("Error saving settings: ", error);
                     showToast("Gagal menyimpan pengaturan.", "error");
                 }
             });
+
+            // Listener untuk tombol Hapus Semua Data
+            document.getElementById('delete-all-data-button').addEventListener('click', showModalDeleteAllData);
+        }
+
+        // Fungsi Hapus Semua Data
+        
+        function showModalDeleteAllData() {
+            const body = `
+                <p class="text-sm text-gray-700 mb-4">
+                    Apakah Anda benar-benar yakin ingin menghapus semua data konten? Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <p class="text-sm font-medium text-gray-800 mb-2">
+                    Untuk konfirmasi, ketik <strong class="text-red-600">HAPUS</strong> di bawah ini:
+                </p>
+                <input type="text" id="modal-delete-confirm" class="w-full rounded-md border-gray-300 shadow-sm" placeholder="HAPUS">
+            `;
+            
+            showModal(
+                'Konfirmasi Hapus Semua Data',
+                body,
+                () => { // onSave callback
+                    const confirmText = document.getElementById('modal-delete-confirm').value;
+                    if (confirmText !== 'HAPUS') {
+                        showToast("Teks konfirmasi salah.", "error");
+                        return;
+                    }
+                    
+                    hideModal();
+                    deleteAllData(); // Panggil fungsi penghapusan
+                },
+                'Hapus Permanen',
+                'bg-red-600 hover:bg-red-700'
+            );
+        }
+
+        async function deleteAllData() {
+            showToast("Menghapus semua data konten...", "success");
+            // PERBAIKAN: Tambahkan 'aktivitas' ke daftar hapus
+            const collectionsToDelete = ['buku', 'anggota', 'kelas', 'transaksi', 'aktivitas']; 
+            
+            try {
+                for (const collName of collectionsToDelete) {
+                    const collRef = getCollectionRef(collName);
+                    const snapshot = await getDocs(collRef);
+                    
+                    if (snapshot.empty) continue; // Lewati jika koleksi kosong
+                    
+                    const batch = writeBatch(db);
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                    console.log(`Koleksi ${collName} berhasil dihapus.`);
+                }
+                await logActivity('alert-triangle', 'Semua data dihapus', 'Data konten telah dihapus permanen.'); // Log
+                showToast("Semua data konten telah berhasil dihapus.", "success");
+            } catch (error) {
+                console.error("Gagal menghapus semua data:", error);
+                showToast("Terjadi kesalahan saat menghapus data.", "error");
+            }
         }
         
         // ----- Entry Point -----
